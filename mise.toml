@@ -1,0 +1,6 @@
+[tools]
+bun = "latest"
+rust = "latest"
+
+[env]
+WEBKIT_DISABLE_DMABUF_RENDERER = 1

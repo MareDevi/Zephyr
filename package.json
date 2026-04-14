@@ -1,0 +1,35 @@
+{
+	"name": "zephyr",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"preview": "vite preview",
+		"tauri": "tauri"
+	},
+	"dependencies": {
+		"@heroui/react": "^3.0.2",
+		"@heroui/styles": "^3.0.2",
+		"@tabler/icons-react": "^3.34.1",
+		"@tailwindcss/vite": "^4.2.2",
+		"@tanstack/react-router": "^1.168.21",
+		"@tauri-apps/api": "^2.10.1",
+		"@tauri-apps/plugin-opener": "^2.5.3",
+		"react": "^19.2.5",
+		"react-dom": "^19.2.5",
+		"recharts": "^3.8.1",
+		"tailwindcss": "^4.2.2",
+		"zustand": "^5.0.12"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.11",
+		"@tauri-apps/cli": "^2.10.1",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
+		"@vitejs/plugin-react": "^6.0.1",
+		"typescript": "~6.0.2",
+		"vite": "^8.0.8"
+	}
+}
