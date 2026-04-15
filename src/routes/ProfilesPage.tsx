@@ -14,6 +14,7 @@ import {
 	extractOptions,
 	useDashboardRuntime,
 } from "../features/dashboard/runtime";
+import { useDraftState } from "../features/dashboard/useDraftState";
 
 const PLATFORM_PROFILE_FALLBACK = [
 	"balanced",
@@ -25,7 +26,7 @@ const PLATFORM_PROFILE_FALLBACK = [
 
 function PlatformProfileTab() {
 	const { snapshot, busyAction, runDashboardAction } = useDashboardRuntime();
-	const [selectedProfile, setSelectedProfile] = useState("balanced");
+	const selectedProfile = useDraftState("balanced");
 	const [setOnAc, setSetOnAc] = useState(false);
 	const [setOnBattery, setSetOnBattery] = useState(false);
 
@@ -40,9 +41,9 @@ function PlatformProfileTab() {
 
 	useEffect(() => {
 		if (snapshot?.platform.platformProfile) {
-			setSelectedProfile(snapshot.platform.platformProfile);
+			selectedProfile.syncFromSnapshot(snapshot.platform.platformProfile);
 		}
-	}, [snapshot]);
+	}, [snapshot?.platform.platformProfile, selectedProfile]);
 
 	const platformControlEnabled =
 		snapshot?.interfaces.asusdPlatformAvailable ?? false;
@@ -64,8 +65,10 @@ function PlatformProfileTab() {
 
 					<Select
 						aria-label="Select Platform Profile"
-						selectedKey={selectedProfile}
-						onSelectionChange={(key) => setSelectedProfile(String(key))}
+						selectedKey={selectedProfile.value}
+						onSelectionChange={(key) =>
+							selectedProfile.setFromUser(String(key))
+						}
 						isDisabled={!platformControlEnabled || !!busyAction}
 					>
 						<Select.Trigger>
@@ -75,10 +78,10 @@ function PlatformProfileTab() {
 						<Select.Popover>
 							<ListBox
 								aria-label="Platform profile options"
-								selectedKeys={[selectedProfile]}
+								selectedKeys={[selectedProfile.value]}
 								onSelectionChange={(keys) => {
 									const key = Array.from(keys)[0];
-									if (key) setSelectedProfile(String(key));
+									if (key) selectedProfile.setFromUser(String(key));
 								}}
 							>
 								{profileOptions.map((profile) => (
@@ -126,15 +129,20 @@ function PlatformProfileTab() {
 						className="font-bold"
 						isDisabled={!platformControlEnabled || !!busyAction}
 						onPress={() =>
-							void runDashboardAction("setPlatformProfile", () =>
+							void (async () => {
+								const result = await runDashboardAction("setPlatformProfile", () =>
 								commands.setPlatformProfile({
-									profile: selectedProfile,
+									profile: selectedProfile.value,
 									ac: supportsAcProfileTarget ? setOnAc : undefined,
 									battery: supportsBatteryProfileTarget
 										? setOnBattery
 										: undefined,
 								}),
-							)
+								);
+								if (result) {
+									selectedProfile.markClean();
+								}
+							})()
 						}
 					>
 						Set Profile
@@ -147,7 +155,7 @@ function PlatformProfileTab() {
 
 function GpuProfileTab() {
 	const { snapshot, busyAction, runDashboardAction } = useDashboardRuntime();
-	const [selectedGpuMode, setSelectedGpuMode] = useState("Hybrid");
+	const selectedGpuMode = useDraftState("Hybrid");
 
 	const gpuModes = useMemo(() => {
 		const parsed = extractOptions(snapshot?.gpu.supportedModes, []);
@@ -162,9 +170,9 @@ function GpuProfileTab() {
 
 	useEffect(() => {
 		if (snapshot?.gpu.mode) {
-			setSelectedGpuMode(snapshot.gpu.mode);
+			selectedGpuMode.syncFromSnapshot(snapshot.gpu.mode);
 		}
-	}, [snapshot?.gpu.mode]);
+	}, [snapshot?.gpu.mode, selectedGpuMode]);
 
 	const gpuControlEnabled =
 		snapshot?.interfaces.supergfxdInterfaceAvailable ?? false;
@@ -180,8 +188,10 @@ function GpuProfileTab() {
 
 					<Select
 						aria-label="Select GPU Mode"
-						selectedKey={selectedGpuMode}
-						onSelectionChange={(key) => setSelectedGpuMode(String(key))}
+						selectedKey={selectedGpuMode.value}
+						onSelectionChange={(key) =>
+							selectedGpuMode.setFromUser(String(key))
+						}
 						isDisabled={!gpuControlEnabled || !gpuModes.length || !!busyAction}
 					>
 						<Select.Trigger>
@@ -191,10 +201,10 @@ function GpuProfileTab() {
 						<Select.Popover>
 							<ListBox
 								aria-label="GPU mode options"
-								selectedKeys={[selectedGpuMode]}
+								selectedKeys={[selectedGpuMode.value]}
 								onSelectionChange={(keys) => {
 									const key = Array.from(keys)[0];
-									if (key) setSelectedGpuMode(String(key));
+									if (key) selectedGpuMode.setFromUser(String(key));
 								}}
 							>
 								{gpuModes.map((mode) => (
@@ -217,9 +227,14 @@ function GpuProfileTab() {
 						className="font-bold"
 						isDisabled={!gpuControlEnabled || !gpuModes.length || !!busyAction}
 						onPress={() =>
-							void runDashboardAction("setGpuMode", () =>
-								commands.setGpuMode({ mode: selectedGpuMode }),
-							)
+							void (async () => {
+								const result = await runDashboardAction("setGpuMode", () =>
+									commands.setGpuMode({ mode: selectedGpuMode.value }),
+								);
+								if (result) {
+									selectedGpuMode.markClean();
+								}
+							})()
 						}
 					>
 						Apply GPU Mode
@@ -232,13 +247,13 @@ function GpuProfileTab() {
 
 function PowerProfileTab() {
 	const { snapshot, busyAction, runDashboardAction } = useDashboardRuntime();
-	const [chargeLimit, setChargeLimit] = useState(80);
+	const chargeLimit = useDraftState(80);
 
 	useEffect(() => {
 		if (snapshot?.platform.chargeControlEndThreshold != null) {
-			setChargeLimit(snapshot.platform.chargeControlEndThreshold);
+			chargeLimit.syncFromSnapshot(snapshot.platform.chargeControlEndThreshold);
 		}
-	}, [snapshot]);
+	}, [snapshot?.platform.chargeControlEndThreshold, chargeLimit]);
 
 	const chargeControlEnabled =
 		(snapshot?.interfaces.asusdPlatformAvailable ?? false) &&
@@ -262,10 +277,10 @@ function PowerProfileTab() {
 							minValue={20}
 							maxValue={100}
 							step={1}
-							value={chargeLimit}
+							value={chargeLimit.value}
 							onChange={(value) => {
 								if (Number.isFinite(value)) {
-									setChargeLimit(Math.round(value));
+									chargeLimit.setFromUser(Math.round(value));
 								}
 							}}
 							isDisabled={!chargeControlEnabled || !!busyAction}
@@ -291,11 +306,16 @@ function PowerProfileTab() {
 						className="font-bold"
 						isDisabled={!chargeControlEnabled || !!busyAction}
 						onPress={() =>
-							void runDashboardAction("setChargeLimit", () =>
-								commands.setChargeLimit({
-									percent: chargeLimit,
-								}),
-							)
+							void (async () => {
+								const result = await runDashboardAction("setChargeLimit", () =>
+									commands.setChargeLimit({
+										percent: chargeLimit.value,
+									}),
+								);
+								if (result) {
+									chargeLimit.markClean();
+								}
+							})()
 						}
 					>
 						Update Charge Policy

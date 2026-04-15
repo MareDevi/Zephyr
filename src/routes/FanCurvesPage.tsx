@@ -21,6 +21,7 @@ import {
 } from "recharts";
 import { commands, type FanCurveSeriesSnapshot } from "../bindings";
 import { useDashboardRuntime } from "../features/dashboard/runtime";
+import { useDraftState } from "../features/dashboard/useDraftState";
 
 type CurvePoint = { temperature: number; pwm: number };
 
@@ -64,7 +65,7 @@ function parseLegacyCurve(
 
 export function FanCurvesPage() {
 	const { snapshot, busyAction, runDashboardAction } = useDashboardRuntime();
-	const [fanProfile, setFanProfile] = useState("balanced");
+	const fanProfile = useDraftState("balanced");
 	const [selectedFan, setSelectedFan] = useState<string | null>(null);
 	const [editablePoints, setEditablePoints] = useState<CurvePoint[]>([]);
 
@@ -73,9 +74,9 @@ export function FanCurvesPage() {
 
 	useEffect(() => {
 		if (snapshot?.fanCurves.activeProfile) {
-			setFanProfile(snapshot.fanCurves.activeProfile);
+			fanProfile.syncFromSnapshot(snapshot.fanCurves.activeProfile);
 		}
-	}, [snapshot?.fanCurves.activeProfile]);
+	}, [snapshot?.fanCurves.activeProfile, fanProfile]);
 
 	const series = useMemo(() => {
 		const structured = snapshot?.fanCurves.curveSeries ?? [];
@@ -145,8 +146,8 @@ export function FanCurvesPage() {
 					<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
 						<Select
 							placeholder="Select Profile"
-							selectedKey={fanProfile}
-							onSelectionChange={(key) => setFanProfile(String(key))}
+							selectedKey={fanProfile.value}
+							onSelectionChange={(key) => fanProfile.setFromUser(String(key))}
 							isDisabled={!fanControlEnabled || !!busyAction}
 						>
 							<Label>Profile</Label>
@@ -157,10 +158,10 @@ export function FanCurvesPage() {
 							<Select.Popover>
 								<ListBox
 									aria-label="Fan profile options"
-									selectedKeys={[fanProfile]}
+									selectedKeys={[fanProfile.value]}
 									onSelectionChange={(keys) => {
 										const key = Array.from(keys)[0];
-										if (key) setFanProfile(String(key));
+										if (key) fanProfile.setFromUser(String(key));
 									}}
 								>
 									{[
@@ -188,9 +189,14 @@ export function FanCurvesPage() {
 								className="font-bold gap-2"
 								isDisabled={!fanControlEnabled || !!busyAction}
 								onPress={() =>
-									void runDashboardAction("readFanCurves", () =>
-										commands.readFanCurves({ profile: fanProfile }),
-									)
+									void (async () => {
+										const result = await runDashboardAction("readFanCurves", () =>
+										commands.readFanCurves({ profile: fanProfile.value }),
+										);
+										if (result) {
+											fanProfile.markClean();
+										}
+									})()
 								}
 							>
 								<IconRefresh size={18} />
@@ -200,9 +206,14 @@ export function FanCurvesPage() {
 								className="font-bold gap-2"
 								isDisabled={!fanControlEnabled || !!busyAction}
 								onPress={() =>
-									void runDashboardAction("resetFanCurves", () =>
-										commands.resetFanCurves({ profile: fanProfile }),
-									)
+									void (async () => {
+										const result = await runDashboardAction("resetFanCurves", () =>
+										commands.resetFanCurves({ profile: fanProfile.value }),
+										);
+										if (result) {
+											fanProfile.markClean();
+										}
+									})()
 								}
 							>
 								<IconTrash size={18} />
@@ -215,12 +226,17 @@ export function FanCurvesPage() {
 								className="w-full font-bold gap-2"
 								isDisabled={!fanControlEnabled || !!busyAction}
 								onPress={() =>
-									void runDashboardAction("setFanCurvesEnabled", () =>
+									void (async () => {
+										const result = await runDashboardAction("setFanCurvesEnabled", () =>
 										commands.setFanCurvesEnabled({
-											profile: fanProfile,
+											profile: fanProfile.value,
 											enabled: true,
 										}),
-									)
+										);
+										if (result) {
+											fanProfile.markClean();
+										}
+									})()
 								}
 							>
 								<IconWind size={18} />
@@ -414,14 +430,19 @@ export function FanCurvesPage() {
 									),
 									pwm: Math.max(0, Math.min(100, Math.round(point.pwm))),
 								}));
-								void runDashboardAction("setFanCurve", () =>
+								void (async () => {
+									const result = await runDashboardAction("setFanCurve", () =>
 									commands.setFanCurve({
-										profile: fanProfile,
+										profile: fanProfile.value,
 										fan: selectedFan,
 										points: payloadPoints,
 										enabled: visibleSeries?.enabled ?? true,
 									}),
-								);
+									);
+									if (result) {
+										fanProfile.markClean();
+									}
+								})();
 							}}
 						>
 							Save to backend

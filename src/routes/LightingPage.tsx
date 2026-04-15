@@ -9,12 +9,13 @@ import {
 	Switch,
 } from "@heroui/react";
 import { IconBolt, IconPalette } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { commands } from "../bindings";
 import {
 	extractOptions,
 	useDashboardRuntime,
 } from "../features/dashboard/runtime";
+import { useDraftState } from "../features/dashboard/useDraftState";
 
 const AURA_MODE_FALLBACK = [
 	"Static",
@@ -40,18 +41,18 @@ function clampByte(value: number): number {
 export function LightingPage() {
 	const { snapshot, busyAction, runDashboardAction } = useDashboardRuntime();
 
-	const [auraBrightness, setAuraBrightness] = useState(2);
-	const [auraMode, setAuraMode] = useState("Static");
-	const [slashEnabled, setSlashEnabled] = useState(true);
-	const [slashBrightness, setSlashBrightness] = useState(128);
-	const [slashInterval, setSlashInterval] = useState(0);
-	const [slashMode, setSlashMode] = useState("Static");
-	const [slashShowOnBoot, setSlashShowOnBoot] = useState(false);
-	const [slashShowOnSleep, setSlashShowOnSleep] = useState(false);
-	const [slashShowOnShutdown, setSlashShowOnShutdown] = useState(false);
-	const [slashShowOnBattery, setSlashShowOnBattery] = useState(false);
-	const [slashShowBatteryWarning, setSlashShowBatteryWarning] = useState(false);
-	const [slashShowOnLidClosed, setSlashShowOnLidClosed] = useState(false);
+	const auraBrightness = useDraftState(2);
+	const auraMode = useDraftState("Static");
+	const slashEnabled = useDraftState(true);
+	const slashBrightness = useDraftState(128);
+	const slashInterval = useDraftState(0);
+	const slashMode = useDraftState("Static");
+	const slashShowOnBoot = useDraftState(false);
+	const slashShowOnSleep = useDraftState(false);
+	const slashShowOnShutdown = useDraftState(false);
+	const slashShowOnBattery = useDraftState(false);
+	const slashShowBatteryWarning = useDraftState(false);
+	const slashShowOnLidClosed = useDraftState(false);
 
 	useEffect(() => {
 		if (!snapshot) {
@@ -60,43 +61,57 @@ export function LightingPage() {
 		if (snapshot.aura.brightness) {
 			const match = snapshot.aura.brightness.match(/\d+/);
 			if (match) {
-				setAuraBrightness(Number.parseInt(match[0], 10) || 0);
+				auraBrightness.syncFromSnapshot(Number.parseInt(match[0], 10) || 0);
 			}
 		}
 		if (snapshot.aura.ledMode) {
-			setAuraMode(snapshot.aura.ledMode.replace(/"/g, ""));
+			auraMode.syncFromSnapshot(snapshot.aura.ledMode.replace(/"/g, ""));
 		}
 		if (snapshot.slash.enabled != null) {
-			setSlashEnabled(snapshot.slash.enabled);
+			slashEnabled.syncFromSnapshot(snapshot.slash.enabled);
 		}
 		if (snapshot.slash.brightness != null) {
-			setSlashBrightness(snapshot.slash.brightness);
+			slashBrightness.syncFromSnapshot(snapshot.slash.brightness);
 		}
 		if (snapshot.slash.interval != null) {
-			setSlashInterval(snapshot.slash.interval);
+			slashInterval.syncFromSnapshot(snapshot.slash.interval);
 		}
 		if (snapshot.slash.mode) {
-			setSlashMode(snapshot.slash.mode.replace(/"/g, ""));
+			slashMode.syncFromSnapshot(snapshot.slash.mode.replace(/"/g, ""));
 		}
 		if (snapshot.slash.showOnBoot != null) {
-			setSlashShowOnBoot(snapshot.slash.showOnBoot);
+			slashShowOnBoot.syncFromSnapshot(snapshot.slash.showOnBoot);
 		}
 		if (snapshot.slash.showOnSleep != null) {
-			setSlashShowOnSleep(snapshot.slash.showOnSleep);
+			slashShowOnSleep.syncFromSnapshot(snapshot.slash.showOnSleep);
 		}
 		if (snapshot.slash.showOnShutdown != null) {
-			setSlashShowOnShutdown(snapshot.slash.showOnShutdown);
+			slashShowOnShutdown.syncFromSnapshot(snapshot.slash.showOnShutdown);
 		}
 		if (snapshot.slash.showOnBattery != null) {
-			setSlashShowOnBattery(snapshot.slash.showOnBattery);
+			slashShowOnBattery.syncFromSnapshot(snapshot.slash.showOnBattery);
 		}
 		if (snapshot.slash.showBatteryWarning != null) {
-			setSlashShowBatteryWarning(snapshot.slash.showBatteryWarning);
+			slashShowBatteryWarning.syncFromSnapshot(snapshot.slash.showBatteryWarning);
 		}
 		if (snapshot.slash.showOnLidClosed != null) {
-			setSlashShowOnLidClosed(snapshot.slash.showOnLidClosed);
+			slashShowOnLidClosed.syncFromSnapshot(snapshot.slash.showOnLidClosed);
 		}
-	}, [snapshot]);
+	}, [
+		snapshot,
+		auraBrightness,
+		auraMode,
+		slashEnabled,
+		slashBrightness,
+		slashInterval,
+		slashMode,
+		slashShowOnBoot,
+		slashShowOnSleep,
+		slashShowOnShutdown,
+		slashShowOnBattery,
+		slashShowBatteryWarning,
+		slashShowOnLidClosed,
+	]);
 
 	const auraModes = useMemo(
 		() =>
@@ -155,10 +170,10 @@ export function LightingPage() {
 								minValue={0}
 								maxValue={3}
 								step={1}
-								value={auraBrightness}
+								value={auraBrightness.value}
 								onChange={(value) => {
 									if (Number.isFinite(value)) {
-										setAuraBrightness(Math.round(value));
+										auraBrightness.setFromUser(Math.round(value));
 									}
 								}}
 								isDisabled={!auraControlEnabled || !!busyAction}
@@ -172,8 +187,8 @@ export function LightingPage() {
 							</NumberField>
 
 							<Select
-								selectedKey={auraMode}
-								onSelectionChange={(key) => setAuraMode(String(key))}
+								selectedKey={auraMode.value}
+								onSelectionChange={(key) => auraMode.setFromUser(String(key))}
 								isDisabled={!auraControlEnabled || !!busyAction}
 							>
 								<Label>Effect Mode</Label>
@@ -184,10 +199,10 @@ export function LightingPage() {
 								<Select.Popover>
 									<ListBox
 										aria-label="Aura mode options"
-										selectedKeys={[auraMode]}
+										selectedKeys={[auraMode.value]}
 										onSelectionChange={(keys) => {
 											const key = Array.from(keys)[0];
-											if (key) setAuraMode(String(key));
+											if (key) auraMode.setFromUser(String(key));
 										}}
 									>
 										{auraModes.map((mode) => (
@@ -206,11 +221,16 @@ export function LightingPage() {
 								className="font-bold"
 								isDisabled={!auraControlEnabled || !!busyAction}
 								onPress={() =>
-									runDashboardAction("setAuraBrightness", () =>
+									void (async () => {
+										const result = await runDashboardAction("setAuraBrightness", () =>
 										commands.setAuraBrightness({
-											level: auraBrightness,
+											level: auraBrightness.value,
 										}),
-									)
+										);
+										if (result) {
+											auraBrightness.markClean();
+										}
+									})()
 								}
 							>
 								Apply Brightness
@@ -219,9 +239,14 @@ export function LightingPage() {
 								className="font-bold"
 								isDisabled={!auraControlEnabled || !!busyAction}
 								onPress={() =>
-									runDashboardAction("setAuraMode", () =>
-										commands.setAuraMode({ mode: auraMode }),
-									)
+									void (async () => {
+										const result = await runDashboardAction("setAuraMode", () =>
+											commands.setAuraMode({ mode: auraMode.value }),
+										);
+										if (result) {
+											auraMode.markClean();
+										}
+									})()
 								}
 							>
 								Apply Mode
@@ -246,8 +271,8 @@ export function LightingPage() {
 								</div>
 							</div>
 							<Switch
-								isSelected={slashEnabled}
-								onChange={setSlashEnabled}
+								isSelected={slashEnabled.value}
+								onChange={slashEnabled.setFromUser}
 								isDisabled={!slashControlEnabled || !!busyAction}
 								size="sm"
 								aria-label="Enable slash lighting"
@@ -271,10 +296,10 @@ export function LightingPage() {
 									<NumberField
 										minValue={0}
 										maxValue={255}
-										value={slashBrightness}
+										value={slashBrightness.value}
 										onChange={(value) => {
 											if (Number.isFinite(value)) {
-												setSlashBrightness(Math.round(value));
+												slashBrightness.setFromUser(Math.round(value));
 											}
 										}}
 										isDisabled={!slashControlEnabled || !!busyAction}
@@ -293,10 +318,10 @@ export function LightingPage() {
 									<NumberField
 										minValue={0}
 										maxValue={255}
-										value={slashInterval}
+										value={slashInterval.value}
 										onChange={(value) => {
 											if (Number.isFinite(value)) {
-												setSlashInterval(Math.round(value));
+												slashInterval.setFromUser(Math.round(value));
 											}
 										}}
 										isDisabled={!slashControlEnabled || !!busyAction}
@@ -315,8 +340,8 @@ export function LightingPage() {
 
 							<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 								<Switch
-									isSelected={slashShowOnBoot}
-									onChange={setSlashShowOnBoot}
+									isSelected={slashShowOnBoot.value}
+									onChange={slashShowOnBoot.setFromUser}
 									isDisabled={!slashControlEnabled || !!busyAction}
 								>
 									<Switch.Control>
@@ -327,8 +352,8 @@ export function LightingPage() {
 									</Switch.Content>
 								</Switch>
 								<Switch
-									isSelected={slashShowOnSleep}
-									onChange={setSlashShowOnSleep}
+									isSelected={slashShowOnSleep.value}
+									onChange={slashShowOnSleep.setFromUser}
 									isDisabled={!slashControlEnabled || !!busyAction}
 								>
 									<Switch.Control>
@@ -339,8 +364,8 @@ export function LightingPage() {
 									</Switch.Content>
 								</Switch>
 								<Switch
-									isSelected={slashShowOnShutdown}
-									onChange={setSlashShowOnShutdown}
+									isSelected={slashShowOnShutdown.value}
+									onChange={slashShowOnShutdown.setFromUser}
 									isDisabled={!slashControlEnabled || !!busyAction}
 								>
 									<Switch.Control>
@@ -351,8 +376,8 @@ export function LightingPage() {
 									</Switch.Content>
 								</Switch>
 								<Switch
-									isSelected={slashShowOnBattery}
-									onChange={setSlashShowOnBattery}
+									isSelected={slashShowOnBattery.value}
+									onChange={slashShowOnBattery.setFromUser}
 									isDisabled={!slashControlEnabled || !!busyAction}
 								>
 									<Switch.Control>
@@ -363,8 +388,8 @@ export function LightingPage() {
 									</Switch.Content>
 								</Switch>
 								<Switch
-									isSelected={slashShowBatteryWarning}
-									onChange={setSlashShowBatteryWarning}
+									isSelected={slashShowBatteryWarning.value}
+									onChange={slashShowBatteryWarning.setFromUser}
 									isDisabled={!slashControlEnabled || !!busyAction}
 								>
 									<Switch.Control>
@@ -375,8 +400,8 @@ export function LightingPage() {
 									</Switch.Content>
 								</Switch>
 								<Switch
-									isSelected={slashShowOnLidClosed}
-									onChange={setSlashShowOnLidClosed}
+									isSelected={slashShowOnLidClosed.value}
+									onChange={slashShowOnLidClosed.setFromUser}
 									isDisabled={!slashControlEnabled || !!busyAction}
 								>
 									<Switch.Control>
@@ -389,8 +414,8 @@ export function LightingPage() {
 							</div>
 
 							<Select
-								selectedKey={slashMode}
-								onSelectionChange={(key) => setSlashMode(String(key))}
+								selectedKey={slashMode.value}
+								onSelectionChange={(key) => slashMode.setFromUser(String(key))}
 								isDisabled={!slashControlEnabled || !!busyAction}
 							>
 								<Label>Slash Mode</Label>
@@ -401,10 +426,10 @@ export function LightingPage() {
 								<Select.Popover>
 									<ListBox
 										aria-label="Slash mode options"
-										selectedKeys={[slashMode]}
+										selectedKeys={[slashMode.value]}
 										onSelectionChange={(keys) => {
 											const key = Array.from(keys)[0];
-											if (key) setSlashMode(String(key));
+											if (key) slashMode.setFromUser(String(key));
 										}}
 									>
 										{slashModes.map((mode) => (
@@ -423,9 +448,14 @@ export function LightingPage() {
 								className="font-bold"
 								isDisabled={!slashControlEnabled || !!busyAction}
 								onPress={() =>
-									runDashboardAction("setSlashMode", () =>
-										commands.setSlashMode({ mode: slashMode }),
-									)
+									void (async () => {
+										const result = await runDashboardAction("setSlashMode", () =>
+											commands.setSlashMode({ mode: slashMode.value }),
+										);
+										if (result) {
+											slashMode.markClean();
+										}
+									})()
 								}
 							>
 								Apply Mode
@@ -438,73 +468,88 @@ export function LightingPage() {
 										{
 											action: "setSlashEnabled",
 											call: () =>
-												commands.setSlashEnabled({ enabled: slashEnabled }),
+												commands.setSlashEnabled({
+													enabled: slashEnabled.value,
+												}),
 										},
 										{
 											action: "setSlashBrightness",
 											call: () =>
 												commands.setSlashBrightness({
-													brightness: clampByte(slashBrightness),
+													brightness: clampByte(slashBrightness.value),
 												}),
 										},
 										{
 											action: "setSlashInterval",
 											call: () =>
 												commands.setSlashInterval({
-													interval: clampByte(slashInterval),
+													interval: clampByte(slashInterval.value),
 												}),
 										},
 										{
 											action: "setSlashShowOnBoot",
 											call: () =>
 												commands.setSlashShowOnBoot({
-													enabled: slashShowOnBoot,
+													enabled: slashShowOnBoot.value,
 												}),
 										},
 										{
 											action: "setSlashShowOnSleep",
 											call: () =>
 												commands.setSlashShowOnSleep({
-													enabled: slashShowOnSleep,
+													enabled: slashShowOnSleep.value,
 												}),
 										},
 										{
 											action: "setSlashShowOnShutdown",
 											call: () =>
 												commands.setSlashShowOnShutdown({
-													enabled: slashShowOnShutdown,
+													enabled: slashShowOnShutdown.value,
 												}),
 										},
 										{
 											action: "setSlashShowOnBattery",
 											call: () =>
 												commands.setSlashShowOnBattery({
-													enabled: slashShowOnBattery,
+													enabled: slashShowOnBattery.value,
 												}),
 										},
 										{
 											action: "setSlashShowBatteryWarning",
 											call: () =>
 												commands.setSlashShowBatteryWarning({
-													enabled: slashShowBatteryWarning,
+													enabled: slashShowBatteryWarning.value,
 												}),
 										},
 										{
 											action: "setSlashShowOnLidClosed",
 											call: () =>
 												commands.setSlashShowOnLidClosed({
-													enabled: slashShowOnLidClosed,
+													enabled: slashShowOnLidClosed.value,
 												}),
 										},
 									] as const;
+									let allSucceeded = true;
 									for (const item of updatePlan) {
 										const result = await runDashboardAction(
 											item.action,
 											item.call,
 										);
 										if (!result) {
+											allSucceeded = false;
 											break;
 										}
+									}
+									if (allSucceeded) {
+										slashEnabled.markClean();
+										slashBrightness.markClean();
+										slashInterval.markClean();
+										slashShowOnBoot.markClean();
+										slashShowOnSleep.markClean();
+										slashShowOnShutdown.markClean();
+										slashShowOnBattery.markClean();
+										slashShowBatteryWarning.markClean();
+										slashShowOnLidClosed.markClean();
 									}
 								}}
 							>
