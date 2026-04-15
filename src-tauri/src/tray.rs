@@ -9,15 +9,11 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::error::AppResult;
 use crate::ipc::dto::DashboardSnapshotDto;
-use crate::settings::SettingsState;
 use crate::state::AppState;
 
 const TRAY_ID: &str = "zephyr-main-tray";
-const MENU_REFRESH: &str = "tray:refresh";
 const MENU_SHOW_WINDOW: &str = "tray:show-window";
 const MENU_HIDE_WINDOW: &str = "tray:hide-window";
-const MENU_AUTOSTART_TOGGLE: &str = "tray:autostart-toggle";
-const MENU_MINIMIZE_TOGGLE: &str = "tray:minimize-to-tray-toggle";
 const MENU_QUIT: &str = "tray:quit";
 const GPU_PREFIX: &str = "tray:gpu:";
 const POWER_PREFIX: &str = "tray:power:";
@@ -41,12 +37,6 @@ impl TrayState {
     pub fn minimize_to_tray_enabled(&self) -> bool {
         self.minimize_to_tray_enabled.load(Ordering::Relaxed)
     }
-
-    fn toggle_minimize_to_tray(&self) -> bool {
-        let next = !self.minimize_to_tray_enabled();
-        self.minimize_to_tray_enabled.store(next, Ordering::Relaxed);
-        next
-    }
 }
 
 pub fn init(app: &tauri::App<Wry>) -> AppResult<()> {
@@ -62,13 +52,7 @@ pub fn init(app: &tauri::App<Wry>) -> AppResult<()> {
         }
     }
 
-    let minimize_to_tray_enabled = app.state::<TrayState>().minimize_to_tray_enabled();
-    let menu = build_menu(
-        &app_handle,
-        &snapshot,
-        autostart_enabled,
-        minimize_to_tray_enabled,
-    )?;
+    let menu = build_menu(&app_handle, &snapshot)?;
     let tooltip = tooltip_for_snapshot(&snapshot);
     let icon = app
         .default_window_icon()
@@ -114,9 +98,7 @@ pub fn sync_from_snapshot(
     let tray = app
         .tray_by_id(TRAY_ID)
         .ok_or_else(|| anyhow!("tray: tray icon not initialized"))?;
-    let autostart_enabled = app.autolaunch().is_enabled().unwrap_or(false);
-    let minimize_to_tray_enabled = app.state::<TrayState>().minimize_to_tray_enabled();
-    let menu = build_menu(app, snapshot, autostart_enabled, minimize_to_tray_enabled)?;
+    let menu = build_menu(app, snapshot)?;
     tray.set_menu(Some(menu))
         .context("tray: failed to update tray menu")?;
     tray.set_tooltip(Some(tooltip_for_snapshot(snapshot)))
@@ -130,12 +112,6 @@ pub fn should_minimize_to_tray(app: &tauri::AppHandle<Wry>) -> bool {
 
 fn handle_menu_event(app: &tauri::AppHandle<Wry>, id: &str) -> AppResult<()> {
     match id {
-        MENU_REFRESH => {
-            let snapshot = crate::services::dashboard::collect_dashboard_resilient();
-            publish_snapshot(app, snapshot)?;
-            notify(app, "AsusTone", "Tray state refreshed.");
-            Ok(())
-        }
         MENU_SHOW_WINDOW => {
             if let Some(window) = app.get_webview_window("main") {
                 window.show().context("tray: failed to show main window")?;
@@ -154,8 +130,6 @@ fn handle_menu_event(app: &tauri::AppHandle<Wry>, id: &str) -> AppResult<()> {
             }
             Ok(())
         }
-        MENU_AUTOSTART_TOGGLE => toggle_autostart(app),
-        MENU_MINIMIZE_TOGGLE => toggle_minimize_to_tray(app),
         MENU_QUIT => {
             app.exit(0);
             Ok(())
@@ -222,50 +196,9 @@ fn publish_snapshot(app: &tauri::AppHandle<Wry>, snapshot: DashboardSnapshotDto)
     sync_from_snapshot(app, &snapshot)
 }
 
-fn toggle_autostart(app: &tauri::AppHandle<Wry>) -> AppResult<()> {
-    let enabled = app.autolaunch().is_enabled().unwrap_or(false);
-    let next_enabled = !enabled;
-    let settings_state = app.state::<SettingsState>();
-    crate::settings::set_autostart_enabled(app, &settings_state, next_enabled)?;
-    notify(
-        app,
-        "AsusTone",
-        if next_enabled {
-            "Start-on-boot enabled."
-        } else {
-            "Start-on-boot disabled."
-        },
-    );
-    let snapshot = app
-        .state::<AppState>()
-        .get_dashboard()
-        .context("tray: failed to read dashboard after autostart toggle")?;
-    sync_from_snapshot(app, &snapshot)
-}
-
-fn toggle_minimize_to_tray(app: &tauri::AppHandle<Wry>) -> AppResult<()> {
-    let next_enabled = app.state::<TrayState>().toggle_minimize_to_tray();
-    notify(
-        app,
-        "AsusTone",
-        if next_enabled {
-            "Minimize-to-tray enabled."
-        } else {
-            "Minimize-to-tray disabled."
-        },
-    );
-    let snapshot = app
-        .state::<AppState>()
-        .get_dashboard()
-        .context("tray: failed to read dashboard after minimize toggle")?;
-    sync_from_snapshot(app, &snapshot)
-}
-
 fn build_menu(
     app: &tauri::AppHandle<Wry>,
     snapshot: &DashboardSnapshotDto,
-    autostart_enabled: bool,
-    minimize_to_tray_enabled: bool,
 ) -> AppResult<Menu<Wry>> {
     let status_text = MenuItem::with_id(
         app,
@@ -326,26 +259,6 @@ fn build_menu(
         .context("tray: failed to build show-window item")?;
     let hide_item = MenuItem::with_id(app, MENU_HIDE_WINDOW, "Hide Window", true, None::<&str>)
         .context("tray: failed to build hide-window item")?;
-    let refresh_item = MenuItem::with_id(app, MENU_REFRESH, "Refresh Status", true, None::<&str>)
-        .context("tray: failed to build refresh item")?;
-    let autostart_item = CheckMenuItem::with_id(
-        app,
-        MENU_AUTOSTART_TOGGLE,
-        "Start on boot",
-        true,
-        autostart_enabled,
-        None::<&str>,
-    )
-    .context("tray: failed to build autostart toggle item")?;
-    let minimize_item = CheckMenuItem::with_id(
-        app,
-        MENU_MINIMIZE_TOGGLE,
-        "Minimize to tray on close",
-        true,
-        minimize_to_tray_enabled,
-        None::<&str>,
-    )
-    .context("tray: failed to build minimize toggle item")?;
     let quit_item = MenuItem::with_id(app, MENU_QUIT, "Quit", true, None::<&str>)
         .context("tray: failed to build quit item")?;
     let separator_top =
@@ -353,16 +266,13 @@ fn build_menu(
     let separator_bottom =
         PredefinedMenuItem::separator(app).context("tray: failed to build bottom separator")?;
 
-    let items: [&dyn IsMenuItem<Wry>; 13] = [
+    let items: [&dyn IsMenuItem<Wry>; 10] = [
         &status_text,
         &daemon_text,
         &separator_top,
         &gpu_menu,
         &power_menu,
         &platform_menu,
-        &refresh_item,
-        &autostart_item,
-        &minimize_item,
         &show_item,
         &hide_item,
         &separator_bottom,
@@ -451,8 +361,20 @@ fn daemon_health_line(snapshot: &DashboardSnapshotDto) -> String {
 }
 
 fn tooltip_for_snapshot(snapshot: &DashboardSnapshotDto) -> String {
+    let cpu = snapshot
+        .performance
+        .cpu
+        .utilization_percent
+        .map(|value| format!("{value:.1}%"))
+        .unwrap_or_else(|| "unknown".to_owned());
+    let gpu = snapshot
+        .performance
+        .gpu
+        .utilization_percent
+        .map(|value| format!("{value:.1}%"))
+        .unwrap_or_else(|| "unknown".to_owned());
     format!(
-        "AsusTone\n{}\n{}",
+        "AsusTone\nCPU: {cpu} | GPU: {gpu}\n{}\n{}",
         status_line(snapshot),
         daemon_health_line(snapshot)
     )

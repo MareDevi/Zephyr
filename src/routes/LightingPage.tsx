@@ -1,12 +1,11 @@
 import {
 	Button,
 	Card,
-	Input,
 	Label,
 	ListBox,
+	NumberField,
 	Select,
 	Separator,
-	Slider,
 	Switch,
 } from "@heroui/react";
 import { IconBolt, IconPalette } from "@tabler/icons-react";
@@ -34,18 +33,18 @@ const SLASH_MODE_FALLBACK = [
 	"Spectrum",
 ];
 
-function clampByte(value: string): number {
-	return Math.max(0, Math.min(255, Number.parseInt(value, 10) || 0));
+function clampByte(value: number): number {
+	return Math.max(0, Math.min(255, Math.round(value)));
 }
 
 export function LightingPage() {
 	const { snapshot, busyAction, runDashboardAction } = useDashboardRuntime();
 
-	const [auraBrightness, setAuraBrightness] = useState("2");
+	const [auraBrightness, setAuraBrightness] = useState(2);
 	const [auraMode, setAuraMode] = useState("Static");
 	const [slashEnabled, setSlashEnabled] = useState(true);
-	const [slashBrightness, setSlashBrightness] = useState("128");
-	const [slashInterval, setSlashInterval] = useState("0");
+	const [slashBrightness, setSlashBrightness] = useState(128);
+	const [slashInterval, setSlashInterval] = useState(0);
 	const [slashMode, setSlashMode] = useState("Static");
 	const [slashShowOnBoot, setSlashShowOnBoot] = useState(false);
 	const [slashShowOnSleep, setSlashShowOnSleep] = useState(false);
@@ -61,7 +60,7 @@ export function LightingPage() {
 		if (snapshot.aura.brightness) {
 			const match = snapshot.aura.brightness.match(/\d+/);
 			if (match) {
-				setAuraBrightness(match[0]);
+				setAuraBrightness(Number.parseInt(match[0], 10) || 0);
 			}
 		}
 		if (snapshot.aura.ledMode) {
@@ -71,10 +70,10 @@ export function LightingPage() {
 			setSlashEnabled(snapshot.slash.enabled);
 		}
 		if (snapshot.slash.brightness != null) {
-			setSlashBrightness(String(snapshot.slash.brightness));
+			setSlashBrightness(snapshot.slash.brightness);
 		}
 		if (snapshot.slash.interval != null) {
-			setSlashInterval(String(snapshot.slash.interval));
+			setSlashInterval(snapshot.slash.interval);
 		}
 		if (snapshot.slash.mode) {
 			setSlashMode(snapshot.slash.mode.replace(/"/g, ""));
@@ -152,21 +151,25 @@ export function LightingPage() {
 									Aura controls are unavailable on this device or backend.
 								</p>
 							) : null}
-							<Slider
+							<NumberField
 								minValue={0}
 								maxValue={3}
 								step={1}
-								value={Number.parseInt(auraBrightness, 10) || 0}
-								onChange={(val) => setAuraBrightness(String(val))}
+								value={auraBrightness}
+								onChange={(value) => {
+									if (Number.isFinite(value)) {
+										setAuraBrightness(Math.round(value));
+									}
+								}}
 								isDisabled={!auraControlEnabled || !!busyAction}
 							>
 								<Label>Brightness</Label>
-								<Slider.Output className="text-sm font-bold" />
-								<Slider.Track>
-									<Slider.Fill />
-									<Slider.Thumb />
-								</Slider.Track>
-							</Slider>
+								<NumberField.Group>
+									<NumberField.DecrementButton />
+									<NumberField.Input />
+									<NumberField.IncrementButton />
+								</NumberField.Group>
+							</NumberField>
 
 							<Select
 								selectedKey={auraMode}
@@ -205,7 +208,7 @@ export function LightingPage() {
 								onPress={() =>
 									runDashboardAction("setAuraBrightness", () =>
 										commands.setAuraBrightness({
-											level: Number.parseInt(auraBrightness, 10) || 2,
+											level: auraBrightness,
 										}),
 									)
 								}
@@ -265,30 +268,48 @@ export function LightingPage() {
 							) : null}
 							<div className="grid grid-cols-2 gap-4">
 								<div className="space-y-1">
-									<Label className="text-[10px] font-bold text-default-400 uppercase tracking-wider">
-										Brightness
-									</Label>
-									<Input
-										type="number"
-										min={0}
-										max={255}
+									<NumberField
+										minValue={0}
+										maxValue={255}
 										value={slashBrightness}
-										onChange={(event) => setSlashBrightness(event.target.value)}
-										disabled={!slashControlEnabled || !!busyAction}
-									/>
+										onChange={(value) => {
+											if (Number.isFinite(value)) {
+												setSlashBrightness(Math.round(value));
+											}
+										}}
+										isDisabled={!slashControlEnabled || !!busyAction}
+									>
+										<Label className="text-[10px] font-bold text-default-400 uppercase tracking-wider">
+											Brightness
+										</Label>
+										<NumberField.Group>
+											<NumberField.DecrementButton />
+											<NumberField.Input />
+											<NumberField.IncrementButton />
+										</NumberField.Group>
+									</NumberField>
 								</div>
 								<div className="space-y-1">
-									<Label className="text-[10px] font-bold text-default-400 uppercase tracking-wider">
-										Interval
-									</Label>
-									<Input
-										type="number"
-										min={0}
-										max={255}
+									<NumberField
+										minValue={0}
+										maxValue={255}
 										value={slashInterval}
-										onChange={(event) => setSlashInterval(event.target.value)}
-										disabled={!slashControlEnabled || !!busyAction}
-									/>
+										onChange={(value) => {
+											if (Number.isFinite(value)) {
+												setSlashInterval(Math.round(value));
+											}
+										}}
+										isDisabled={!slashControlEnabled || !!busyAction}
+									>
+										<Label className="text-[10px] font-bold text-default-400 uppercase tracking-wider">
+											Interval
+										</Label>
+										<NumberField.Group>
+											<NumberField.DecrementButton />
+											<NumberField.Input />
+											<NumberField.IncrementButton />
+										</NumberField.Group>
+									</NumberField>
 								</div>
 							</div>
 

@@ -1,11 +1,10 @@
 import {
 	Button,
 	Card,
-	Input,
 	Label,
 	ListBox,
+	NumberField,
 	Select,
-	Slider,
 	Switch,
 } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
@@ -22,13 +21,13 @@ export function AdvancedPage() {
 
 	const [animeEnabled, setAnimeEnabled] = useState(false);
 	const [animeBrightness, setAnimeBrightness] = useState(0);
-	const [screenpadBrightness, setScreenpadBrightness] = useState("0");
-	const [screenpadGamma, setScreenpadGamma] = useState("1");
+	const [screenpadBrightness, setScreenpadBrightness] = useState(0);
+	const [screenpadGamma, setScreenpadGamma] = useState(1);
 	const [syncScreenpad, setSyncScreenpad] = useState(false);
 	const [scsiEnabled, setScsiEnabled] = useState(false);
-	const [scsiMode, setScsiMode] = useState("0");
+	const [scsiMode, setScsiMode] = useState(0);
 	const [armouryPath, setArmouryPath] = useState<string | null>(null);
-	const [armouryValue, setArmouryValue] = useState("0");
+	const [armouryValue, setArmouryValue] = useState(0);
 
 	useEffect(() => {
 		if (!snapshot) {
@@ -41,10 +40,10 @@ export function AdvancedPage() {
 			setAnimeBrightness(toInt(snapshot.anime.brightness, 0));
 		}
 		if (snapshot.backlight.screenpadBrightness != null) {
-			setScreenpadBrightness(String(snapshot.backlight.screenpadBrightness));
+			setScreenpadBrightness(snapshot.backlight.screenpadBrightness);
 		}
 		if (snapshot.backlight.screenpadGamma != null) {
-			setScreenpadGamma(String(snapshot.backlight.screenpadGamma));
+			setScreenpadGamma(Number.parseFloat(snapshot.backlight.screenpadGamma) || 0);
 		}
 		if (snapshot.backlight.syncScreenpadBrightness != null) {
 			setSyncScreenpad(snapshot.backlight.syncScreenpadBrightness);
@@ -53,19 +52,19 @@ export function AdvancedPage() {
 			setScsiEnabled(snapshot.scsi.enabled);
 		}
 		if (snapshot.scsi.mode != null) {
-			setScsiMode(String(snapshot.scsi.mode));
+			setScsiMode(toInt(snapshot.scsi.mode, 0));
 		}
 		const armouryAttributes = snapshot.armoury.attributes;
 		if (armouryAttributes.length === 0) {
 			setArmouryPath(null);
-			setArmouryValue("0");
+			setArmouryValue(0);
 		} else if (
 			!armouryPath ||
 			!armouryAttributes.some((attribute) => attribute.path === armouryPath)
 		) {
 			const first = armouryAttributes[0];
 			setArmouryPath(first.path);
-			setArmouryValue(String(first.currentValue ?? first.defaultValue ?? 0));
+			setArmouryValue(first.currentValue ?? first.defaultValue ?? 0);
 		}
 	}, [snapshot, armouryPath]);
 
@@ -85,18 +84,15 @@ export function AdvancedPage() {
 
 	useEffect(() => {
 		if (selectedArmoury?.currentValue != null) {
-			setArmouryValue(String(selectedArmoury.currentValue));
+			setArmouryValue(selectedArmoury.currentValue);
 		}
 	}, [selectedArmoury?.currentValue]);
 
 	const screenpadBrightnessValid =
-		screenpadBrightness.trim() !== "" &&
-		Number.isFinite(Number.parseInt(screenpadBrightness, 10));
-	const screenpadGammaValid =
-		screenpadGamma.trim() !== "" &&
-		Number.isFinite(Number.parseFloat(screenpadGamma));
-	const scsiModeValid =
-		scsiMode.trim() !== "" && Number.isFinite(Number.parseInt(scsiMode, 10));
+		Number.isFinite(screenpadBrightness) &&
+		Number.isInteger(screenpadBrightness);
+	const screenpadGammaValid = Number.isFinite(screenpadGamma);
+	const scsiModeValid = Number.isFinite(scsiMode) && Number.isInteger(scsiMode);
 	const armouryInputDisabled =
 		!armouryAvailable || !!busyAction || selectedArmoury == null;
 
@@ -118,21 +114,25 @@ export function AdvancedPage() {
 								<Label>Enable Anime Display</Label>
 							</Switch.Content>
 						</Switch>
-						<Slider
+						<NumberField
 							minValue={0}
 							maxValue={3}
 							step={1}
 							value={animeBrightness}
-							onChange={(value) => setAnimeBrightness(value as number)}
+							onChange={(value) => {
+								if (Number.isFinite(value)) {
+									setAnimeBrightness(Math.round(value));
+								}
+							}}
 							isDisabled={!animeEnabledAvailable || !!busyAction}
 						>
 							<Label>Brightness</Label>
-							<Slider.Output />
-							<Slider.Track>
-								<Slider.Fill />
-								<Slider.Thumb />
-							</Slider.Track>
-						</Slider>
+							<NumberField.Group>
+								<NumberField.DecrementButton />
+								<NumberField.Input />
+								<NumberField.IncrementButton />
+							</NumberField.Group>
+						</NumberField>
 						<div className="flex gap-2">
 							<Button
 								isDisabled={!animeEnabledAvailable || !!busyAction}
@@ -164,22 +164,41 @@ export function AdvancedPage() {
 						<Label htmlFor="advanced-screenpad-brightness">
 							ScreenPad Brightness
 						</Label>
-						<Input
+						<NumberField
 							id="advanced-screenpad-brightness"
-							type="number"
+							minValue={0}
 							value={screenpadBrightness}
-							onChange={(event) => setScreenpadBrightness(event.target.value)}
-							disabled={!backlightAvailable || !!busyAction}
-						/>
+							onChange={(value) => {
+								if (Number.isFinite(value)) {
+									setScreenpadBrightness(Math.round(value));
+								}
+							}}
+							isDisabled={!backlightAvailable || !!busyAction}
+						>
+							<NumberField.Group>
+								<NumberField.DecrementButton />
+								<NumberField.Input />
+								<NumberField.IncrementButton />
+							</NumberField.Group>
+						</NumberField>
 						<Label htmlFor="advanced-screenpad-gamma">ScreenPad Gamma</Label>
-						<Input
+						<NumberField
 							id="advanced-screenpad-gamma"
-							type="number"
-							step="0.1"
+							step={0.1}
 							value={screenpadGamma}
-							onChange={(event) => setScreenpadGamma(event.target.value)}
-							disabled={!backlightAvailable || !!busyAction}
-						/>
+							onChange={(value) => {
+								if (Number.isFinite(value)) {
+									setScreenpadGamma(value);
+								}
+							}}
+							isDisabled={!backlightAvailable || !!busyAction}
+						>
+							<NumberField.Group>
+								<NumberField.DecrementButton />
+								<NumberField.Input />
+								<NumberField.IncrementButton />
+							</NumberField.Group>
+						</NumberField>
 						<Switch
 							isSelected={syncScreenpad}
 							onChange={setSyncScreenpad}
@@ -202,11 +221,8 @@ export function AdvancedPage() {
 							onPress={() =>
 								void runDashboardAction("setBacklight", () =>
 									commands.setBacklight({
-										screenpadBrightness: Number.parseInt(
-											screenpadBrightness,
-											10,
-										),
-										screenpadGamma: Number.parseFloat(screenpadGamma),
+										screenpadBrightness,
+										screenpadGamma,
 										syncScreenpadBrightness: syncScreenpad,
 									}),
 								)
@@ -235,15 +251,24 @@ export function AdvancedPage() {
 							</Switch.Content>
 						</Switch>
 						<Label htmlFor="advanced-scsi-mode">Mode</Label>
-						<Input
+						<NumberField
 							id="advanced-scsi-mode"
-							type="number"
-							min={0}
-							max={255}
+							minValue={0}
+							maxValue={255}
 							value={scsiMode}
-							onChange={(event) => setScsiMode(event.target.value)}
-							disabled={!scsiAvailable || !!busyAction}
-						/>
+							onChange={(value) => {
+								if (Number.isFinite(value)) {
+									setScsiMode(Math.round(value));
+								}
+							}}
+							isDisabled={!scsiAvailable || !!busyAction}
+						>
+							<NumberField.Group>
+								<NumberField.DecrementButton />
+								<NumberField.Input />
+								<NumberField.IncrementButton />
+							</NumberField.Group>
+						</NumberField>
 						<div className="flex gap-2">
 							<Button
 								isDisabled={!scsiAvailable || !!busyAction}
@@ -259,7 +284,7 @@ export function AdvancedPage() {
 								isDisabled={!scsiAvailable || !!busyAction || !scsiModeValid}
 								onPress={() =>
 									void runDashboardAction("setScsiMode", () =>
-										commands.setScsiMode({ mode: toInt(scsiMode, 0) }),
+										commands.setScsiMode({ mode: scsiMode }),
 									)
 								}
 							>
@@ -313,23 +338,31 @@ export function AdvancedPage() {
 							</Select.Popover>
 						</Select>
 						<Label htmlFor="advanced-armoury-value">Current Value</Label>
-						<Input
+						<NumberField
 							id="advanced-armoury-value"
-							type="number"
 							value={armouryValue}
-							onChange={(event) => setArmouryValue(event.target.value)}
-							disabled={armouryInputDisabled}
-						/>
+							onChange={(value) => {
+								if (Number.isFinite(value)) {
+									setArmouryValue(Math.round(value));
+								}
+							}}
+							isDisabled={armouryInputDisabled}
+						>
+							<NumberField.Group>
+								<NumberField.DecrementButton />
+								<NumberField.Input />
+								<NumberField.IncrementButton />
+							</NumberField.Group>
+						</NumberField>
 						<Button
 							isDisabled={armouryInputDisabled}
 							onPress={() =>
 								void runDashboardAction("setArmouryValue", () =>
 									commands.setArmouryValue({
 										path: selectedArmoury?.path ?? "",
-										value: toInt(
-											armouryValue,
-											selectedArmoury?.currentValue ?? 0,
-										),
+										value: Number.isFinite(armouryValue)
+											? armouryValue
+											: selectedArmoury?.currentValue ?? 0,
 									}),
 								)
 							}

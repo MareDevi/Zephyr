@@ -4,8 +4,8 @@ import {
 	Checkbox,
 	Label,
 	ListBox,
+	NumberField,
 	Select,
-	Slider,
 	Tabs,
 } from "@heroui/react";
 import { useEffect, useMemo, useState } from "react";
@@ -256,23 +256,27 @@ function PowerProfileTab() {
 					</div>
 
 					<div className="space-y-8">
-						<Slider
+						<NumberField
 							className="w-full max-w-md"
 							aria-label="Charge Limit"
 							minValue={20}
 							maxValue={100}
 							step={1}
 							value={chargeLimit}
-							onChange={(val) => setChargeLimit(val as number)}
+							onChange={(value) => {
+								if (Number.isFinite(value)) {
+									setChargeLimit(Math.round(value));
+								}
+							}}
 							isDisabled={!chargeControlEnabled || !!busyAction}
 						>
 							<Label>Charge Limit</Label>
-							<Slider.Output className="text-xl font-bold" />
-							<Slider.Track>
-								<Slider.Fill />
-								<Slider.Thumb />
-							</Slider.Track>
-						</Slider>
+							<NumberField.Group>
+								<NumberField.DecrementButton />
+								<NumberField.Input className="text-xl font-bold" />
+								<NumberField.IncrementButton />
+							</NumberField.Group>
+						</NumberField>
 
 						<div className="rounded-xl bg-default-100 p-4 text-xs text-default-500">
 							<p className="font-semibold text-foreground mb-1">

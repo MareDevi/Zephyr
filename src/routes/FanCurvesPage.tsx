@@ -1,9 +1,9 @@
 import {
 	Button,
 	Card,
-	Input,
 	Label,
 	ListBox,
+	NumberField,
 	Select,
 	Separator,
 } from "@heroui/react";
@@ -326,19 +326,12 @@ export function FanCurvesPage() {
 									className="grid grid-cols-2 gap-2 rounded-lg border border-default-100 p-3"
 								>
 									<div className="space-y-1">
-										<Label htmlFor={`temp-${index}`}>Temp (°C)</Label>
-										<Input
-											id={`temp-${index}`}
-											type="number"
-											min={0}
-											max={100}
-											value={String(point.temperature)}
-											onChange={(event) => {
-												const nextValue = Number.parseInt(
-													event.target.value,
-													10,
-												);
-												if (Number.isNaN(nextValue)) {
+										<NumberField
+											minValue={0}
+											maxValue={100}
+											value={point.temperature}
+											onChange={(nextValue) => {
+												if (!Number.isFinite(nextValue)) {
 													return;
 												}
 												setEditablePoints((current) =>
@@ -346,31 +339,28 @@ export function FanCurvesPage() {
 														entryIndex === index
 															? {
 																	...entry,
-																	temperature: Math.max(
-																		0,
-																		Math.min(100, nextValue),
-																	),
+																	temperature: Math.max(0, Math.min(100, Math.round(nextValue))),
 																}
 															: entry,
 													),
 												);
 											}}
-										/>
+										>
+											<Label>Temp (°C)</Label>
+											<NumberField.Group>
+												<NumberField.DecrementButton />
+												<NumberField.Input />
+												<NumberField.IncrementButton />
+											</NumberField.Group>
+										</NumberField>
 									</div>
 									<div className="space-y-1">
-										<Label htmlFor={`pwm-${index}`}>PWM (%)</Label>
-										<Input
-											id={`pwm-${index}`}
-											type="number"
-											min={0}
-											max={100}
-											value={String(point.pwm)}
-											onChange={(event) => {
-												const nextValue = Number.parseInt(
-													event.target.value,
-													10,
-												);
-												if (Number.isNaN(nextValue)) {
+										<NumberField
+											minValue={0}
+											maxValue={100}
+											value={point.pwm}
+											onChange={(nextValue) => {
+												if (!Number.isFinite(nextValue)) {
 													return;
 												}
 												setEditablePoints((current) =>
@@ -378,13 +368,20 @@ export function FanCurvesPage() {
 														entryIndex === index
 															? {
 																	...entry,
-																	pwm: Math.max(0, Math.min(100, nextValue)),
+																	pwm: Math.max(0, Math.min(100, Math.round(nextValue))),
 																}
 															: entry,
 													),
 												);
 											}}
-										/>
+										>
+											<Label>PWM (%)</Label>
+											<NumberField.Group>
+												<NumberField.DecrementButton />
+												<NumberField.Input />
+												<NumberField.IncrementButton />
+											</NumberField.Group>
+										</NumberField>
 									</div>
 								</div>
 							))}

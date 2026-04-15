@@ -1,4 +1,12 @@
-import { Card, Label, ListBox, Select, Slider, Switch, Tabs } from "@heroui/react";
+import {
+	Card,
+	Label,
+	ListBox,
+	NumberField,
+	Select,
+	Switch,
+	Tabs,
+} from "@heroui/react";
 import { useEffect, useState } from "react";
 import {
 	commands,
@@ -289,26 +297,29 @@ export function SettingsPage() {
 
 								{customAccentEnabled ? (
 									<div className="space-y-3">
-										<Slider
+										<NumberField
 											className="w-full max-w-xs"
 											minValue={0}
 											maxValue={360}
 											step={1}
 											value={accentHue}
 											onChange={(value) => {
-												const nextHue = value as number;
+												if (!Number.isFinite(value)) {
+													return;
+												}
+												const nextHue = Math.round(value);
 												setAccentHue(nextHue);
 												setCustomAccentValue(hueToHex(nextHue));
 											}}
 											isDisabled={isBusy}
 										>
 											<Label>Accent Hue</Label>
-											<Slider.Output />
-											<Slider.Track>
-												<Slider.Fill />
-												<Slider.Thumb />
-											</Slider.Track>
-										</Slider>
+											<NumberField.Group>
+												<NumberField.DecrementButton />
+												<NumberField.Input />
+												<NumberField.IncrementButton />
+											</NumberField.Group>
+										</NumberField>
 
 										<button
 											type="button"
