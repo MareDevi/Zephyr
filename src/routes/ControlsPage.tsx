@@ -7,9 +7,10 @@ import {
 	Select,
 	Switch,
 } from "@heroui/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { commands } from "../bindings";
 import { useDashboardRuntime } from "../features/dashboard/runtime";
+import { useDraftState } from "../features/dashboard/useDraftState";
 
 function toInt(value: string, fallback = 0): number {
 	const parsed = Number.parseInt(value, 10);
@@ -19,54 +20,67 @@ function toInt(value: string, fallback = 0): number {
 export function AdvancedPage() {
 	const { snapshot, busyAction, runDashboardAction } = useDashboardRuntime();
 
-	const [animeEnabled, setAnimeEnabled] = useState(false);
-	const [animeBrightness, setAnimeBrightness] = useState(0);
-	const [screenpadBrightness, setScreenpadBrightness] = useState(0);
-	const [screenpadGamma, setScreenpadGamma] = useState(1);
-	const [syncScreenpad, setSyncScreenpad] = useState(false);
-	const [scsiEnabled, setScsiEnabled] = useState(false);
-	const [scsiMode, setScsiMode] = useState(0);
-	const [armouryPath, setArmouryPath] = useState<string | null>(null);
-	const [armouryValue, setArmouryValue] = useState(0);
+	const animeEnabled = useDraftState(false);
+	const animeBrightness = useDraftState(0);
+	const screenpadBrightness = useDraftState(0);
+	const screenpadGamma = useDraftState(1);
+	const syncScreenpad = useDraftState(false);
+	const scsiEnabled = useDraftState(false);
+	const scsiMode = useDraftState(0);
+	const armouryPath = useDraftState<string | null>(null);
+	const armouryValue = useDraftState(0);
 
 	useEffect(() => {
 		if (!snapshot) {
 			return;
 		}
 		if (snapshot.anime.enableDisplay != null) {
-			setAnimeEnabled(snapshot.anime.enableDisplay);
+			animeEnabled.syncFromSnapshot(snapshot.anime.enableDisplay);
 		}
 		if (snapshot.anime.brightness != null) {
-			setAnimeBrightness(toInt(snapshot.anime.brightness, 0));
+			animeBrightness.syncFromSnapshot(toInt(snapshot.anime.brightness, 0));
 		}
 		if (snapshot.backlight.screenpadBrightness != null) {
-			setScreenpadBrightness(snapshot.backlight.screenpadBrightness);
+			screenpadBrightness.syncFromSnapshot(snapshot.backlight.screenpadBrightness);
 		}
 		if (snapshot.backlight.screenpadGamma != null) {
-			setScreenpadGamma(Number.parseFloat(snapshot.backlight.screenpadGamma) || 0);
+			screenpadGamma.syncFromSnapshot(
+				Number.parseFloat(snapshot.backlight.screenpadGamma) || 0,
+			);
 		}
 		if (snapshot.backlight.syncScreenpadBrightness != null) {
-			setSyncScreenpad(snapshot.backlight.syncScreenpadBrightness);
+			syncScreenpad.syncFromSnapshot(snapshot.backlight.syncScreenpadBrightness);
 		}
 		if (snapshot.scsi.enabled != null) {
-			setScsiEnabled(snapshot.scsi.enabled);
+			scsiEnabled.syncFromSnapshot(snapshot.scsi.enabled);
 		}
 		if (snapshot.scsi.mode != null) {
-			setScsiMode(toInt(snapshot.scsi.mode, 0));
+			scsiMode.syncFromSnapshot(toInt(snapshot.scsi.mode, 0));
 		}
 		const armouryAttributes = snapshot.armoury.attributes;
 		if (armouryAttributes.length === 0) {
-			setArmouryPath(null);
-			setArmouryValue(0);
+			armouryPath.reset(null);
+			armouryValue.reset(0);
 		} else if (
-			!armouryPath ||
-			!armouryAttributes.some((attribute) => attribute.path === armouryPath)
+			!armouryPath.value ||
+			!armouryAttributes.some((attribute) => attribute.path === armouryPath.value)
 		) {
 			const first = armouryAttributes[0];
-			setArmouryPath(first.path);
-			setArmouryValue(first.currentValue ?? first.defaultValue ?? 0);
+			armouryPath.reset(first.path);
+			armouryValue.reset(first.currentValue ?? first.defaultValue ?? 0);
 		}
-	}, [snapshot, armouryPath]);
+	}, [
+		snapshot,
+		animeEnabled,
+		animeBrightness,
+		screenpadBrightness,
+		screenpadGamma,
+		syncScreenpad,
+		scsiEnabled,
+		scsiMode,
+		armouryPath,
+		armouryValue,
+	]);
 
 	const animeEnabledAvailable =
 		snapshot?.interfaces.asusdAnimeAvailable ?? false;
@@ -77,22 +91,23 @@ export function AdvancedPage() {
 
 	const selectedArmoury = useMemo(
 		() =>
-			snapshot?.armoury.attributes.find((item) => item.path === armouryPath) ??
+			snapshot?.armoury.attributes.find((item) => item.path === armouryPath.value) ??
 			null,
-		[snapshot?.armoury.attributes, armouryPath],
+		[snapshot?.armoury.attributes, armouryPath.value],
 	);
 
 	useEffect(() => {
 		if (selectedArmoury?.currentValue != null) {
-			setArmouryValue(selectedArmoury.currentValue);
+			armouryValue.syncFromSnapshot(selectedArmoury.currentValue);
 		}
-	}, [selectedArmoury?.currentValue]);
+	}, [selectedArmoury?.currentValue, armouryValue]);
 
 	const screenpadBrightnessValid =
-		Number.isFinite(screenpadBrightness) &&
-		Number.isInteger(screenpadBrightness);
-	const screenpadGammaValid = Number.isFinite(screenpadGamma);
-	const scsiModeValid = Number.isFinite(scsiMode) && Number.isInteger(scsiMode);
+		Number.isFinite(screenpadBrightness.value) &&
+		Number.isInteger(screenpadBrightness.value);
+	const screenpadGammaValid = Number.isFinite(screenpadGamma.value);
+	const scsiModeValid =
+		Number.isFinite(scsiMode.value) && Number.isInteger(scsiMode.value);
 	const armouryInputDisabled =
 		!armouryAvailable || !!busyAction || selectedArmoury == null;
 
@@ -103,8 +118,8 @@ export function AdvancedPage() {
 					<div className="space-y-5">
 						<h3 className="text-lg font-bold">Anime Matrix</h3>
 						<Switch
-							isSelected={animeEnabled}
-							onChange={setAnimeEnabled}
+							isSelected={animeEnabled.value}
+							onChange={animeEnabled.setFromUser}
 							isDisabled={!animeEnabledAvailable || !!busyAction}
 						>
 							<Switch.Control>
@@ -118,10 +133,10 @@ export function AdvancedPage() {
 							minValue={0}
 							maxValue={3}
 							step={1}
-							value={animeBrightness}
+							value={animeBrightness.value}
 							onChange={(value) => {
 								if (Number.isFinite(value)) {
-									setAnimeBrightness(Math.round(value));
+									animeBrightness.setFromUser(Math.round(value));
 								}
 							}}
 							isDisabled={!animeEnabledAvailable || !!busyAction}
@@ -137,9 +152,18 @@ export function AdvancedPage() {
 							<Button
 								isDisabled={!animeEnabledAvailable || !!busyAction}
 								onPress={() =>
-									void runDashboardAction("setAnimeDisplayEnabled", () =>
-										commands.setAnimeDisplayEnabled({ enabled: animeEnabled }),
-									)
+									void (async () => {
+										const result = await runDashboardAction(
+											"setAnimeDisplayEnabled",
+											() =>
+												commands.setAnimeDisplayEnabled({
+													enabled: animeEnabled.value,
+												}),
+										);
+										if (result) {
+											animeEnabled.markClean();
+										}
+									})()
 								}
 							>
 								Apply Display
@@ -147,9 +171,18 @@ export function AdvancedPage() {
 							<Button
 								isDisabled={!animeEnabledAvailable || !!busyAction}
 								onPress={() =>
-									void runDashboardAction("setAnimeBrightness", () =>
-										commands.setAnimeBrightness({ level: animeBrightness }),
-									)
+									void (async () => {
+										const result = await runDashboardAction(
+											"setAnimeBrightness",
+											() =>
+												commands.setAnimeBrightness({
+													level: animeBrightness.value,
+												}),
+										);
+										if (result) {
+											animeBrightness.markClean();
+										}
+									})()
 								}
 							>
 								Apply Brightness
@@ -167,10 +200,10 @@ export function AdvancedPage() {
 						<NumberField
 							id="advanced-screenpad-brightness"
 							minValue={0}
-							value={screenpadBrightness}
+							value={screenpadBrightness.value}
 							onChange={(value) => {
 								if (Number.isFinite(value)) {
-									setScreenpadBrightness(Math.round(value));
+									screenpadBrightness.setFromUser(Math.round(value));
 								}
 							}}
 							isDisabled={!backlightAvailable || !!busyAction}
@@ -185,10 +218,10 @@ export function AdvancedPage() {
 						<NumberField
 							id="advanced-screenpad-gamma"
 							step={0.1}
-							value={screenpadGamma}
+							value={screenpadGamma.value}
 							onChange={(value) => {
 								if (Number.isFinite(value)) {
-									setScreenpadGamma(value);
+									screenpadGamma.setFromUser(value);
 								}
 							}}
 							isDisabled={!backlightAvailable || !!busyAction}
@@ -200,8 +233,8 @@ export function AdvancedPage() {
 							</NumberField.Group>
 						</NumberField>
 						<Switch
-							isSelected={syncScreenpad}
-							onChange={setSyncScreenpad}
+							isSelected={syncScreenpad.value}
+							onChange={syncScreenpad.setFromUser}
 							isDisabled={!backlightAvailable || !!busyAction}
 						>
 							<Switch.Control>
@@ -219,13 +252,20 @@ export function AdvancedPage() {
 								!screenpadGammaValid
 							}
 							onPress={() =>
-								void runDashboardAction("setBacklight", () =>
+								void (async () => {
+									const result = await runDashboardAction("setBacklight", () =>
 									commands.setBacklight({
-										screenpadBrightness,
-										screenpadGamma,
-										syncScreenpadBrightness: syncScreenpad,
+										screenpadBrightness: screenpadBrightness.value,
+										screenpadGamma: screenpadGamma.value,
+										syncScreenpadBrightness: syncScreenpad.value,
 									}),
-								)
+									);
+									if (result) {
+										screenpadBrightness.markClean();
+										screenpadGamma.markClean();
+										syncScreenpad.markClean();
+									}
+								})()
 							}
 						>
 							Apply Backlight
@@ -239,8 +279,8 @@ export function AdvancedPage() {
 					<div className="space-y-5">
 						<h3 className="text-lg font-bold">SCSI</h3>
 						<Switch
-							isSelected={scsiEnabled}
-							onChange={setScsiEnabled}
+							isSelected={scsiEnabled.value}
+							onChange={scsiEnabled.setFromUser}
 							isDisabled={!scsiAvailable || !!busyAction}
 						>
 							<Switch.Control>
@@ -255,10 +295,10 @@ export function AdvancedPage() {
 							id="advanced-scsi-mode"
 							minValue={0}
 							maxValue={255}
-							value={scsiMode}
+							value={scsiMode.value}
 							onChange={(value) => {
 								if (Number.isFinite(value)) {
-									setScsiMode(Math.round(value));
+									scsiMode.setFromUser(Math.round(value));
 								}
 							}}
 							isDisabled={!scsiAvailable || !!busyAction}
@@ -273,9 +313,18 @@ export function AdvancedPage() {
 							<Button
 								isDisabled={!scsiAvailable || !!busyAction}
 								onPress={() =>
-									void runDashboardAction("setScsiEnabled", () =>
-										commands.setScsiEnabled({ enabled: scsiEnabled }),
-									)
+									void (async () => {
+										const result = await runDashboardAction(
+											"setScsiEnabled",
+											() =>
+												commands.setScsiEnabled({
+													enabled: scsiEnabled.value,
+												}),
+										);
+										if (result) {
+											scsiEnabled.markClean();
+										}
+									})()
 								}
 							>
 								Apply Enabled
@@ -283,9 +332,14 @@ export function AdvancedPage() {
 							<Button
 								isDisabled={!scsiAvailable || !!busyAction || !scsiModeValid}
 								onPress={() =>
-									void runDashboardAction("setScsiMode", () =>
-										commands.setScsiMode({ mode: scsiMode }),
-									)
+									void (async () => {
+										const result = await runDashboardAction("setScsiMode", () =>
+											commands.setScsiMode({ mode: scsiMode.value }),
+										);
+										if (result) {
+											scsiMode.markClean();
+										}
+									})()
 								}
 							>
 								Apply Mode
@@ -299,10 +353,10 @@ export function AdvancedPage() {
 						<h3 className="text-lg font-bold">Armoury Attributes</h3>
 						<Select
 							placeholder="Select attribute"
-							selectedKey={armouryPath}
+							selectedKey={armouryPath.value}
 							onSelectionChange={(key) => {
 								if (key !== null) {
-									setArmouryPath(String(key));
+									armouryPath.setFromUser(String(key));
 								}
 							}}
 							isDisabled={!armouryAvailable || !!busyAction}
@@ -314,15 +368,15 @@ export function AdvancedPage() {
 							</Select.Trigger>
 							<Select.Popover>
 								<ListBox
-									aria-label="Armoury attribute options"
-									selectedKeys={armouryPath ? [armouryPath] : []}
-									selectionMode="single"
-									onSelectionChange={(keys) => {
-										const key = Array.from(keys)[0];
-										if (key) {
-											setArmouryPath(String(key));
-										}
-									}}
+								aria-label="Armoury attribute options"
+								selectedKeys={armouryPath.value ? [armouryPath.value] : []}
+								selectionMode="single"
+								onSelectionChange={(keys) => {
+									const key = Array.from(keys)[0];
+									if (key) {
+										armouryPath.setFromUser(String(key));
+									}
+								}}
 								>
 									{(snapshot?.armoury.attributes ?? []).map((attribute) => (
 										<ListBox.Item
@@ -340,10 +394,10 @@ export function AdvancedPage() {
 						<Label htmlFor="advanced-armoury-value">Current Value</Label>
 						<NumberField
 							id="advanced-armoury-value"
-							value={armouryValue}
+							value={armouryValue.value}
 							onChange={(value) => {
 								if (Number.isFinite(value)) {
-									setArmouryValue(Math.round(value));
+									armouryValue.setFromUser(Math.round(value));
 								}
 							}}
 							isDisabled={armouryInputDisabled}
@@ -357,14 +411,20 @@ export function AdvancedPage() {
 						<Button
 							isDisabled={armouryInputDisabled}
 							onPress={() =>
-								void runDashboardAction("setArmouryValue", () =>
+								void (async () => {
+									const result = await runDashboardAction("setArmouryValue", () =>
 									commands.setArmouryValue({
 										path: selectedArmoury?.path ?? "",
-										value: Number.isFinite(armouryValue)
-											? armouryValue
+										value: Number.isFinite(armouryValue.value)
+											? armouryValue.value
 											: selectedArmoury?.currentValue ?? 0,
 									}),
-								)
+									);
+									if (result) {
+										armouryPath.markClean();
+										armouryValue.markClean();
+									}
+								})()
 							}
 						>
 							Apply Attribute
