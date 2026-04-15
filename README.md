@@ -68,6 +68,12 @@ busctl --user tree org.asusd
 
 ## Installation
 
+### Install from aur
+
+```bash
+paru -S zephyr-desktop-bin
+```
+
 ### Build from source
 
 #### Dependencies
