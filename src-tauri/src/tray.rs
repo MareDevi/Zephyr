@@ -54,13 +54,12 @@ pub fn init(app: &tauri::App<Wry>) -> AppResult<()> {
 
     let menu = build_menu(&app_handle, &snapshot)?;
     let tooltip = tooltip_for_snapshot(&snapshot);
-    let icon = app
-        .default_window_icon()
-        .cloned()
-        .ok_or_else(|| anyhow!("tray: default window icon is missing"))?;
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))
+        .context("tray: failed to load tray icon image")?;
 
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(icon)
+        .icon_as_template(false)
         .tooltip(tooltip)
         .menu(&menu)
         .on_menu_event(|app, event| {

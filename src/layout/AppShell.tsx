@@ -84,14 +84,21 @@ export function AppShell({ children }: { children: ReactNode }) {
 				}`}
 			>
 				<div className="flex items-center justify-between p-4">
-					{collapsed ? null : (
-						<div className="flex flex-col">
-							<span className="text-sm font-semibold text-default-500">
-								Control Hub
-							</span>
-							<span className="text-lg font-bold tracking-tight">Zephyr</span>
-						</div>
-					)}
+					<div className="flex min-w-0 items-center gap-3">
+						<img
+							src="/icon.svg"
+							alt="Zephyr icon"
+							className="h-9 w-9 shrink-0 rounded-xl border border-default-200/80 bg-content2 p-1"
+						/>
+						{collapsed ? null : (
+							<div className="flex min-w-0 flex-col">
+								<span className="text-sm font-semibold text-default-500">
+									Control Hub
+								</span>
+								<span className="text-lg font-bold tracking-tight">Zephyr</span>
+							</div>
+						)}
+					</div>
 					<Button
 						isIconOnly
 						size="sm"
