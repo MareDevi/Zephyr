@@ -1,15 +1,15 @@
-use std::fs;
-use std::path::PathBuf;
 use std::sync::RwLock;
 
 use anyhow::{anyhow, Context};
-use tauri::{Manager, Wry};
+use tauri::Wry;
 use tauri_plugin_autostart::ManagerExt as AutoStartExt;
+use tauri_plugin_store::StoreExt;
 
 use crate::error::AppResult;
 use crate::ipc::dto::{ColorMode, LaunchBehavior, SettingsSnapshotDto, ThemeId, ThemeKind};
 
-const SETTINGS_FILENAME: &str = "settings.json";
+const SETTINGS_STORE_FILENAME: &str = "settings.json";
+const SETTINGS_STORE_KEY: &str = "app";
 
 pub struct SettingsState {
     settings: RwLock<SettingsSnapshotDto>,
@@ -41,27 +41,24 @@ impl SettingsState {
 }
 
 pub fn load_settings(app: &tauri::AppHandle<Wry>) -> AppResult<SettingsSnapshotDto> {
-    let path = settings_path(app)?;
-    if !path.exists() {
+    let store = app
+        .store(SETTINGS_STORE_FILENAME)
+        .context("settings: failed to open settings store")?;
+    let Some(value) = store.get(SETTINGS_STORE_KEY.to_owned()) else {
         return Ok(SettingsSnapshotDto::default());
-    }
-
-    let text = fs::read_to_string(&path)
-        .with_context(|| format!("settings: failed to read {}", path.display()))?;
-    let settings: SettingsSnapshotDto = serde_json::from_str(&text)
-        .with_context(|| format!("settings: failed to parse {}", path.display()))?;
+    };
+    let settings: SettingsSnapshotDto =
+        serde_json::from_value(value).context("settings: failed to parse store value")?;
     Ok(normalize_settings(settings))
 }
 
 pub fn save_settings(app: &tauri::AppHandle<Wry>, settings: &SettingsSnapshotDto) -> AppResult<()> {
-    let path = settings_path(app)?;
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("settings: failed to create {}", parent.display()))?;
-    }
-    let json = serde_json::to_string_pretty(settings)
-        .context("settings: failed to serialize settings")?;
-    fs::write(&path, json).with_context(|| format!("settings: failed to write {}", path.display()))
+    let store = app
+        .store(SETTINGS_STORE_FILENAME)
+        .context("settings: failed to open settings store")?;
+    let value = serde_json::to_value(settings).context("settings: failed to serialize settings")?;
+    store.set(SETTINGS_STORE_KEY.to_owned(), value);
+    store.save().context("settings: failed to persist settings")
 }
 
 pub fn apply_autostart(app: &tauri::AppHandle<Wry>, enabled: bool) -> AppResult<()> {
@@ -144,14 +141,6 @@ pub fn set_theme(
     save_settings(app, &settings)?;
     state.set(settings.clone())?;
     Ok(settings)
-}
-
-fn settings_path(app: &tauri::AppHandle<Wry>) -> AppResult<PathBuf> {
-    let config_dir = app
-        .path()
-        .app_config_dir()
-        .context("settings: failed to resolve app config directory")?;
-    Ok(config_dir.join(SETTINGS_FILENAME))
 }
 
 fn is_valid_hex_color(value: &str) -> bool {

@@ -11,6 +11,7 @@ import { IconRefresh, IconTrash, IconWind } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import {
 	CartesianGrid,
+	LabelList,
 	Line,
 	LineChart,
 	ResponsiveContainer,
@@ -287,14 +288,27 @@ export function FanCurvesPage() {
 										labelFormatter={(value) => `${value}°C`}
 									/>
 									<Line
-										type="monotone"
+										type="linear"
 										dataKey="pwm"
-										stroke="var(--primary)"
+										stroke="var(--accent)"
 										strokeWidth={3}
-										dot={{ r: 4, fill: "var(--primary)", strokeWidth: 0 }}
-										activeDot={{ r: 6 }}
+										dot={{
+											r: 4,
+											fill: "var(--accent)",
+											stroke: "var(--content1)",
+											strokeWidth: 1.5,
+										}}
+										activeDot={{ r: 6, fill: "var(--accent)" }}
 										isAnimationActive
-									/>
+									>
+										<LabelList
+											dataKey="pwm"
+											position="top"
+											formatter={(value) => `${value}%`}
+											fontSize={10}
+											fill="var(--foreground)"
+										/>
+									</Line>
 								</LineChart>
 							</ResponsiveContainer>
 						</div>
