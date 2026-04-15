@@ -53,22 +53,6 @@ _Communicates with the [asusd](https://github.com/asus-linux/asusd) daemon via D
 | **nvml** | NVIDIA Management Library (`libnvidia-ml.so`) | NVIDIA GPU users |
 | **D-Bus session bus** | D-Bus session bus | Yes |
 
-### Install asusd
-
-> ⚠️ asusd is actively developed — some features may require the latest version.
-
-```bash
-# Arch Linux (AUR)
-yay -S asusd
-
-# Build from source
-git clone https://github.com/asus-linux/asusd
-cd asusd
-cargo build --release
-sudo cp target/release/asusd /usr/local/bin/
-sudo cp asusd.service /etc/systemd/system/
-sudo systemctl enable --now asusd
-```
 
 ### Verify asusd is running
 
