@@ -104,16 +104,13 @@ export function LightingPage() {
 			extractOptions(snapshot?.aura.supportedBasicModes, AURA_MODE_FALLBACK),
 		[snapshot?.aura.supportedBasicModes],
 	);
-	const slashModes = useMemo(
-		() => {
-			const selected = snapshot?.slash.mode?.replace(/"/g, "");
-			if (selected && !SLASH_MODE_FALLBACK.includes(selected)) {
-				return [selected, ...SLASH_MODE_FALLBACK];
-			}
-			return SLASH_MODE_FALLBACK;
-		},
-		[snapshot?.slash.mode],
-	);
+	const slashModes = useMemo(() => {
+		const selected = snapshot?.slash.mode?.replace(/"/g, "");
+		if (selected && !SLASH_MODE_FALLBACK.includes(selected)) {
+			return [selected, ...SLASH_MODE_FALLBACK];
+		}
+		return SLASH_MODE_FALLBACK;
+	}, [snapshot?.slash.mode]);
 
 	const auraControlEnabled = snapshot?.interfaces.asusdAuraAvailable ?? false;
 	const slashControlEnabled = snapshot?.interfaces.asusdSlashAvailable ?? false;
@@ -122,11 +119,11 @@ export function LightingPage() {
 		<div className="space-y-8">
 			<div className="grid gap-6 md:grid-cols-2">
 				{/* Keyboard Aura Card */}
-				<Card className="bg-content1 p-6 border-none shadow-none">
+				<Card className="dashboard-card p-6">
 					<div className="flex flex-col gap-6">
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-3">
-								<div className="p-2 rounded-lg bg-primary/10 text-primary">
+								<div className="rounded-lg bg-default p-2 text-primary">
 									<IconPalette size={20} />
 								</div>
 								<div>
@@ -139,8 +136,8 @@ export function LightingPage() {
 							<div
 								className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
 									auraControlEnabled
-										? "bg-success/10 text-success"
-										: "bg-danger/10 text-danger"
+										? "bg-default text-success"
+										: "bg-default text-danger"
 								}`}
 							>
 								{auraControlEnabled ? "Available" : "Unavailable"}
@@ -165,7 +162,7 @@ export function LightingPage() {
 							>
 								<Label>Brightness</Label>
 								<Slider.Output className="text-sm font-bold" />
-								<Slider.Track className="h-2">
+								<Slider.Track>
 									<Slider.Fill />
 									<Slider.Thumb />
 								</Slider.Track>
@@ -203,7 +200,6 @@ export function LightingPage() {
 
 						<div className="grid grid-cols-2 gap-3 mt-auto">
 							<Button
-								variant="primary"
 								className="font-bold"
 								isDisabled={!auraControlEnabled || !!busyAction}
 								onPress={() =>
@@ -217,7 +213,6 @@ export function LightingPage() {
 								Apply Brightness
 							</Button>
 							<Button
-								variant="secondary"
 								className="font-bold"
 								isDisabled={!auraControlEnabled || !!busyAction}
 								onPress={() =>
@@ -233,11 +228,11 @@ export function LightingPage() {
 				</Card>
 
 				{/* Slash Lighting Card */}
-				<Card className="bg-content1 p-6 border-none shadow-none">
+				<Card className="dashboard-card p-6">
 					<div className="flex flex-col gap-6">
 						<div className="flex items-center justify-between">
 							<div className="flex items-center gap-3">
-								<div className="p-2 rounded-lg bg-warning/10 text-warning">
+								<div className="rounded-lg bg-default p-2 text-warning">
 									<IconBolt size={20} />
 								</div>
 								<div>
@@ -404,7 +399,6 @@ export function LightingPage() {
 
 						<div className="grid grid-cols-2 gap-3 mt-auto">
 							<Button
-								variant="primary"
 								className="font-bold"
 								isDisabled={!slashControlEnabled || !!busyAction}
 								onPress={() =>
@@ -416,14 +410,14 @@ export function LightingPage() {
 								Apply Mode
 							</Button>
 							<Button
-								variant="secondary"
 								className="font-bold"
 								isDisabled={!slashControlEnabled || !!busyAction}
 								onPress={async () => {
 									const updatePlan = [
 										{
 											action: "setSlashEnabled",
-											call: () => commands.setSlashEnabled({ enabled: slashEnabled }),
+											call: () =>
+												commands.setSlashEnabled({ enabled: slashEnabled }),
 										},
 										{
 											action: "setSlashBrightness",
@@ -442,12 +436,16 @@ export function LightingPage() {
 										{
 											action: "setSlashShowOnBoot",
 											call: () =>
-												commands.setSlashShowOnBoot({ enabled: slashShowOnBoot }),
+												commands.setSlashShowOnBoot({
+													enabled: slashShowOnBoot,
+												}),
 										},
 										{
 											action: "setSlashShowOnSleep",
 											call: () =>
-												commands.setSlashShowOnSleep({ enabled: slashShowOnSleep }),
+												commands.setSlashShowOnSleep({
+													enabled: slashShowOnSleep,
+												}),
 										},
 										{
 											action: "setSlashShowOnShutdown",
@@ -479,7 +477,10 @@ export function LightingPage() {
 										},
 									] as const;
 									for (const item of updatePlan) {
-										const result = await runDashboardAction(item.action, item.call);
+										const result = await runDashboardAction(
+											item.action,
+											item.call,
+										);
 										if (!result) {
 											break;
 										}

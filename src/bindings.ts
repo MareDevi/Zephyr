@@ -7,6 +7,10 @@ export const commands = {
 	getBootstrapSnapshot: () => typedError<BootstrapSnapshotDto, ApiError>(__TAURI_INVOKE("get_bootstrap_snapshot")),
 	refreshBootstrapSnapshot: () => typedError<BootstrapSnapshotDto, ApiError>(__TAURI_INVOKE("refresh_bootstrap_snapshot")),
 	getDashboardSnapshot: () => typedError<DashboardSnapshotDto, ApiError>(__TAURI_INVOKE("get_dashboard_snapshot")),
+	getSettings: () => typedError<SettingsSnapshotDto, ApiError>(__TAURI_INVOKE("get_settings")),
+	setAutostart: (request: SetAutostartRequest) => typedError<SettingsSnapshotDto, ApiError>(__TAURI_INVOKE("set_autostart", { request })),
+	setLaunchBehavior: (request: SetLaunchBehaviorRequest) => typedError<SettingsSnapshotDto, ApiError>(__TAURI_INVOKE("set_launch_behavior", { request })),
+	setTheme: (request: SetThemeRequest) => typedError<SettingsSnapshotDto, ApiError>(__TAURI_INVOKE("set_theme", { request })),
 	refreshDashboardSnapshot: () => typedError<DashboardSnapshotDto, ApiError>(__TAURI_INVOKE("refresh_dashboard_snapshot")),
 	setGpuMode: (request: SetGpuModeRequest) => typedError<DashboardSnapshotDto, ApiError>(__TAURI_INVOKE("set_gpu_mode", { request })),
 	setPowerProfile: (request: SetPowerProfileRequest) => typedError<DashboardSnapshotDto, ApiError>(__TAURI_INVOKE("set_power_profile", { request })),
@@ -105,6 +109,8 @@ export type BootstrapSnapshotDto = {
 	health: DaemonHealthSnapshot,
 };
 
+export type ColorMode = "light" | "dark" | "system";
+
 export type CpuPerformanceSnapshot = {
 	frequencyMhz: number | null,
 	utilizationPercent: number | null,
@@ -186,6 +192,8 @@ export type GpuStatusSnapshot = {
 	lastError: string | null,
 };
 
+export type LaunchBehavior = "normal" | "silent";
+
 export type PerformanceSnapshot = {
 	cpu: CpuPerformanceSnapshot,
 	gpu: GpuPerformanceSnapshot,
@@ -260,6 +268,10 @@ export type SetAuraModeRequest = {
 	mode: string,
 };
 
+export type SetAutostartRequest = {
+	enabled: boolean,
+};
+
 export type SetBacklightRequest = {
 	screenpadBrightness: number | null,
 	screenpadGamma: number | null,
@@ -289,6 +301,10 @@ export type SetFanCurvesEnabledRequest = {
 
 export type SetGpuModeRequest = {
 	mode: string,
+};
+
+export type SetLaunchBehaviorRequest = {
+	launchBehavior: LaunchBehavior,
 };
 
 export type SetLedsBrightnessRequest = {
@@ -333,6 +349,22 @@ export type SetSlashModeRequest = {
 	mode: string,
 };
 
+export type SetThemeRequest = {
+	themeKind: ThemeKind,
+	themeId: ThemeId,
+	accentColor: string | null,
+	colorMode: ColorMode,
+};
+
+export type SettingsSnapshotDto = {
+	autostartEnabled?: boolean,
+	launchBehavior?: LaunchBehavior,
+	themeKind?: ThemeKind,
+	themeId?: ThemeId,
+	accentColor?: string | null,
+	colorMode?: ColorMode,
+};
+
 export type SlashStatusSnapshot = {
 	enabled: boolean | null,
 	brightness: number | null,
@@ -346,6 +378,10 @@ export type SlashStatusSnapshot = {
 	showOnLidClosed: boolean | null,
 	lastError: string | null,
 };
+
+export type ThemeId = "default" | "latte" | "frappe" | "macchiato" | "mocha";
+
+export type ThemeKind = "heroui" | "catppuccin";
 
 /* Tauri Specta runtime */
 async function typedError<T, E>(result: Promise<T>): Promise<{ status: "ok"; data: T } | { status: "error"; error: E }> {

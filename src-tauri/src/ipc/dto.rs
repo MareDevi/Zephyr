@@ -16,6 +16,59 @@ pub struct BootstrapSnapshotDto {
     pub health: DaemonHealthSnapshot,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum LaunchBehavior {
+    #[default]
+    Normal,
+    Silent,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ThemeId {
+    #[default]
+    Default,
+    Latte,
+    Frappe,
+    Macchiato,
+    Mocha,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ThemeKind {
+    #[default]
+    Heroui,
+    Catppuccin,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Type, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ColorMode {
+    Light,
+    Dark,
+    #[default]
+    System,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SettingsSnapshotDto {
+    #[serde(default)]
+    pub autostart_enabled: bool,
+    #[serde(default)]
+    pub launch_behavior: LaunchBehavior,
+    #[serde(default)]
+    pub theme_kind: ThemeKind,
+    #[serde(default)]
+    pub theme_id: ThemeId,
+    #[serde(default)]
+    pub accent_color: Option<String>,
+    #[serde(default)]
+    pub color_mode: ColorMode,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DaemonInterfaceSnapshot {
@@ -233,6 +286,27 @@ pub struct SetGpuModeRequest {
 #[serde(rename_all = "camelCase")]
 pub struct SetPowerProfileRequest {
     pub profile: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SetAutostartRequest {
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SetLaunchBehaviorRequest {
+    pub launch_behavior: LaunchBehavior,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]
+#[serde(rename_all = "camelCase")]
+pub struct SetThemeRequest {
+    pub theme_kind: ThemeKind,
+    pub theme_id: ThemeId,
+    pub accent_color: Option<String>,
+    pub color_mode: ColorMode,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Type)]

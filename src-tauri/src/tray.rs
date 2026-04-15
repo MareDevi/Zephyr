@@ -9,6 +9,7 @@ use tauri_plugin_notification::NotificationExt;
 
 use crate::error::AppResult;
 use crate::ipc::dto::DashboardSnapshotDto;
+use crate::settings::SettingsState;
 use crate::state::AppState;
 
 const TRAY_ID: &str = "zephyr-main-tray";
@@ -222,20 +223,19 @@ fn publish_snapshot(app: &tauri::AppHandle<Wry>, snapshot: DashboardSnapshotDto)
 }
 
 fn toggle_autostart(app: &tauri::AppHandle<Wry>) -> AppResult<()> {
-    let manager = app.autolaunch();
-    let enabled = manager.is_enabled().unwrap_or(false);
+    let enabled = app.autolaunch().is_enabled().unwrap_or(false);
     let next_enabled = !enabled;
-    if next_enabled {
-        manager
-            .enable()
-            .context("tray: failed to enable start-on-boot")?;
-        notify(app, "AsusTone", "Start-on-boot enabled.");
-    } else {
-        manager
-            .disable()
-            .context("tray: failed to disable start-on-boot")?;
-        notify(app, "AsusTone", "Start-on-boot disabled.");
-    }
+    let settings_state = app.state::<SettingsState>();
+    crate::settings::set_autostart_enabled(app, &settings_state, next_enabled)?;
+    notify(
+        app,
+        "AsusTone",
+        if next_enabled {
+            "Start-on-boot enabled."
+        } else {
+            "Start-on-boot disabled."
+        },
+    );
     let snapshot = app
         .state::<AppState>()
         .get_dashboard()

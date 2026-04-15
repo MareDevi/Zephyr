@@ -46,13 +46,14 @@ function PlatformProfileTab() {
 
 	const platformControlEnabled =
 		snapshot?.interfaces.asusdPlatformAvailable ?? false;
-	const supportsAcProfileTarget = snapshot?.platform.platformProfileOnAc != null;
+	const supportsAcProfileTarget =
+		snapshot?.platform.platformProfileOnAc != null;
 	const supportsBatteryProfileTarget =
 		snapshot?.platform.platformProfileOnBattery != null;
 
 	return (
 		<div className="flex flex-col gap-6">
-			<Card className="bg-content1 p-6 border-none shadow-none">
+			<Card className="dashboard-card p-6">
 				<div className="flex flex-col gap-6">
 					<div>
 						<h3 className="text-lg font-bold">Platform Profile</h3>
@@ -95,7 +96,9 @@ function PlatformProfileTab() {
 							isSelected={setOnAc}
 							onChange={setSetOnAc}
 							isDisabled={
-								!platformControlEnabled || !!busyAction || !supportsAcProfileTarget
+								!platformControlEnabled ||
+								!!busyAction ||
+								!supportsAcProfileTarget
 							}
 						>
 							<Checkbox.Control />
@@ -120,7 +123,6 @@ function PlatformProfileTab() {
 					</div>
 
 					<Button
-						variant="primary"
 						className="font-bold"
 						isDisabled={!platformControlEnabled || !!busyAction}
 						onPress={() =>
@@ -164,11 +166,12 @@ function GpuProfileTab() {
 		}
 	}, [snapshot?.gpu.mode]);
 
-	const gpuControlEnabled = snapshot?.interfaces.supergfxdInterfaceAvailable ?? false;
+	const gpuControlEnabled =
+		snapshot?.interfaces.supergfxdInterfaceAvailable ?? false;
 
 	return (
 		<div className="flex flex-col gap-6">
-			<Card className="bg-content1 p-6 border-none shadow-none">
+			<Card className="dashboard-card p-6">
 				<div className="flex flex-col gap-6">
 					<h3 className="text-lg font-bold">GPU Profile</h3>
 					<p className="text-xs text-default-500">
@@ -211,7 +214,6 @@ function GpuProfileTab() {
 					) : null}
 
 					<Button
-						variant="primary"
 						className="font-bold"
 						isDisabled={!gpuControlEnabled || !gpuModes.length || !!busyAction}
 						onPress={() =>
@@ -244,7 +246,7 @@ function PowerProfileTab() {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<Card className="bg-content1 p-6 border-none shadow-none">
+			<Card className="dashboard-card p-6">
 				<div className="flex flex-col gap-6">
 					<div>
 						<h3 className="text-lg font-bold">Charge Limit</h3>
@@ -255,6 +257,7 @@ function PowerProfileTab() {
 
 					<div className="space-y-8">
 						<Slider
+							className="w-full max-w-md"
 							aria-label="Charge Limit"
 							minValue={20}
 							maxValue={100}
@@ -263,8 +266,9 @@ function PowerProfileTab() {
 							onChange={(val) => setChargeLimit(val as number)}
 							isDisabled={!chargeControlEnabled || !!busyAction}
 						>
+							<Label>Charge Limit</Label>
 							<Slider.Output className="text-xl font-bold" />
-							<Slider.Track className="h-2">
+							<Slider.Track>
 								<Slider.Fill />
 								<Slider.Thumb />
 							</Slider.Track>
@@ -280,7 +284,6 @@ function PowerProfileTab() {
 					</div>
 
 					<Button
-						variant="primary"
 						className="font-bold"
 						isDisabled={!chargeControlEnabled || !!busyAction}
 						onPress={() =>
@@ -302,19 +305,39 @@ function PowerProfileTab() {
 export function ProfilesPage() {
 	return (
 		<div className="space-y-6">
-			<Tabs aria-label="Profile tabs" variant="primary">
-				<Tabs.List>
-					<Tabs.Tab id="platform">Platform</Tabs.Tab>
-					<Tabs.Tab id="gpu">GPU</Tabs.Tab>
-					<Tabs.Tab id="power">Power</Tabs.Tab>
-				</Tabs.List>
-				<Tabs.Panel id="platform">
+			<Card className="dashboard-card p-4">
+				<p className="section-title">System profiles</p>
+				<p className="section-description mt-1">
+					Configure performance strategy, GPU routing, and charging policy.
+				</p>
+			</Card>
+			<Tabs className="w-full" aria-label="Profile tabs">
+				<Tabs.ListContainer className="w-full">
+					<Tabs.List
+						aria-label="Profile tabs"
+						className="w-full *:data-[selected=true]:text-accent-foreground"
+					>
+						<Tabs.Tab id="platform">
+							Platform
+							<Tabs.Indicator className="bg-accent" />
+						</Tabs.Tab>
+						<Tabs.Tab id="gpu">
+							GPU
+							<Tabs.Indicator className="bg-accent" />
+						</Tabs.Tab>
+						<Tabs.Tab id="power">
+							Power
+							<Tabs.Indicator className="bg-accent" />
+						</Tabs.Tab>
+					</Tabs.List>
+				</Tabs.ListContainer>
+				<Tabs.Panel className="pt-4" id="platform">
 					<PlatformProfileTab />
 				</Tabs.Panel>
-				<Tabs.Panel id="gpu">
+				<Tabs.Panel className="pt-4" id="gpu">
 					<GpuProfileTab />
 				</Tabs.Panel>
-				<Tabs.Panel id="power">
+				<Tabs.Panel className="pt-4" id="power">
 					<PowerProfileTab />
 				</Tabs.Panel>
 			</Tabs>

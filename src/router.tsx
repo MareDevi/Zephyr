@@ -11,6 +11,7 @@ import { FanCurvesPage } from "./routes/FanCurvesPage";
 import { LightingPage } from "./routes/LightingPage";
 import { OverviewPage } from "./routes/OverviewPage";
 import { ProfilesPage } from "./routes/ProfilesPage";
+import { SettingsPage } from "./routes/SettingsPage";
 
 function RootLayout() {
 	return (
@@ -56,12 +57,19 @@ const advancedRoute = createRoute({
 	component: AdvancedPage,
 });
 
+const settingsRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/settings",
+	component: SettingsPage,
+});
+
 const routeTree = rootRoute.addChildren([
 	overviewRoute,
 	profilesRoute,
 	fanCurvesRoute,
 	auraRoute,
 	advancedRoute,
+	settingsRoute,
 ]);
 
 export const router = createRouter({

@@ -1,2 +1,71 @@
+@layer theme, base, components, utilities;
 @import "tailwindcss";
 @import "@heroui/styles";
+@import "./themes/catppuccin.css" layer(theme);
+
+:root {
+	--app-sidebar-width: 18rem;
+	--app-shell-max-width: 92rem;
+}
+
+@layer base {
+	html,
+	body,
+	#root {
+		height: 100%;
+	}
+
+	body {
+		background: var(--background);
+		color: var(--foreground);
+		@apply antialiased transition-colors duration-300 motion-reduce:transition-none;
+	}
+}
+
+@layer components {
+	.tabs__indicator {
+		background: var(--accent);
+	}
+
+	.tabs:not(.tabs--secondary) .tabs__tab[aria-selected="true"] {
+		color: var(--accent-foreground);
+	}
+
+	.app-canvas {
+		background: var(--content1);
+	}
+
+	.dashboard-card {
+		border: 1px solid var(--border);
+		background: var(--content2);
+		color: var(--foreground);
+		box-shadow:
+			0 1px 2px rgb(0 0 0 / 0.08),
+			0 0 0 1px color-mix(in oklch, var(--default) 20%, transparent);
+		transition:
+			border-color 200ms ease,
+			box-shadow 200ms ease,
+			transform 200ms ease;
+	}
+
+	.dashboard-card:hover {
+		border-color: var(--default);
+		box-shadow:
+			0 10px 28px rgb(0 0 0 / 0.14),
+			0 0 0 1px color-mix(in oklch, var(--default) 28%, transparent);
+		transform: translateY(-1px);
+	}
+
+	.section-title {
+		@apply text-lg font-semibold tracking-tight;
+	}
+
+	.section-description {
+		color: var(--muted);
+		@apply text-xs;
+	}
+
+	.status-pill {
+		@apply inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider;
+	}
+}

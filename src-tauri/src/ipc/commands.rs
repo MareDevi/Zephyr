@@ -5,16 +5,18 @@ use tauri::State;
 use crate::error::ApiError;
 use crate::ipc::dto::{
     BacklightStatusSnapshot, BatteryOneShotRequest, BootstrapSnapshotDto, DashboardSnapshotDto,
+    SettingsSnapshotDto, SetAutostartRequest, SetLaunchBehaviorRequest,
     ReadFanCurvesRequest, ResetFanCurvesRequest, ScsiStatusSnapshot, SetAnimeBrightnessRequest,
     SetAnimeBuiltinsEnabledRequest, SetAnimeDisplayEnabledRequest, SetAnimeOffConditionRequest,
     SetArmouryValueRequest, SetAuraBrightnessRequest, SetAuraModeRequest, SetBacklightRequest,
-    SetChargeLimitRequest, SetFanCurveRequest, SetFanCurvesEnabledRequest, SetGpuModeRequest,
+    SetChargeLimitRequest, SetFanCurveRequest, SetFanCurvesEnabledRequest, SetGpuModeRequest, SetThemeRequest,
     SetLedsBrightnessRequest,
     SetPlatformProfileRequest, SetPowerProfileRequest, SetScsiEnabledRequest, SetScsiModeRequest,
     SetSlashBrightnessRequest, SetSlashEnabledRequest, SetSlashFlagRequest,
     SetSlashIntervalRequest, SetSlashModeRequest,
 };
 use crate::services::dashboard;
+use crate::settings::SettingsState;
 use crate::state::AppState;
 
 #[tauri::command]
@@ -48,6 +50,59 @@ pub fn get_dashboard_snapshot(
     state: State<'_, AppState>,
 ) -> Result<DashboardSnapshotDto, ApiError> {
     state.get_dashboard().map_err(ApiError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_settings(state: State<'_, SettingsState>) -> Result<SettingsSnapshotDto, ApiError> {
+    state.get().map_err(ApiError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_autostart(
+    request: SetAutostartRequest,
+    state: State<'_, SettingsState>,
+    app: tauri::AppHandle,
+) -> Result<SettingsSnapshotDto, ApiError> {
+    let settings = crate::settings::set_autostart_enabled(&app, &state, request.enabled)
+        .map_err(ApiError::from)?;
+    let snapshot = app
+        .state::<AppState>()
+        .get_dashboard()
+        .map_err(ApiError::from)?;
+    crate::tray::sync_from_snapshot(&app, &snapshot)
+        .map_err(|error| ApiError::from(anyhow::anyhow!("tray sync failed: {error}")))?;
+    Ok(settings)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_launch_behavior(
+    request: SetLaunchBehaviorRequest,
+    state: State<'_, SettingsState>,
+    app: tauri::AppHandle,
+) -> Result<SettingsSnapshotDto, ApiError> {
+    crate::settings::set_launch_behavior(&app, &state, request.launch_behavior)
+        .map_err(ApiError::from)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn set_theme(
+    request: SetThemeRequest,
+    state: State<'_, SettingsState>,
+    app: tauri::AppHandle,
+) -> Result<SettingsSnapshotDto, ApiError> {
+    crate::settings::set_theme(
+        &app,
+        &state,
+        request.theme_kind,
+        request.theme_id,
+        request.accent_color,
+        request.color_mode,
+    )
+        .map_err(ApiError::from)
 }
 
 #[tauri::command]

@@ -69,14 +69,17 @@ export function AdvancedPage() {
 		}
 	}, [snapshot, armouryPath]);
 
-	const animeEnabledAvailable = snapshot?.interfaces.asusdAnimeAvailable ?? false;
-	const backlightAvailable = snapshot?.interfaces.asusdBacklightAvailable ?? false;
+	const animeEnabledAvailable =
+		snapshot?.interfaces.asusdAnimeAvailable ?? false;
+	const backlightAvailable =
+		snapshot?.interfaces.asusdBacklightAvailable ?? false;
 	const scsiAvailable = snapshot?.interfaces.asusdScsiAvailable ?? false;
 	const armouryAvailable = snapshot?.interfaces.asusdArmouryAvailable ?? false;
 
 	const selectedArmoury = useMemo(
 		() =>
-			snapshot?.armoury.attributes.find((item) => item.path === armouryPath) ?? null,
+			snapshot?.armoury.attributes.find((item) => item.path === armouryPath) ??
+			null,
 		[snapshot?.armoury.attributes, armouryPath],
 	);
 
@@ -100,7 +103,7 @@ export function AdvancedPage() {
 	return (
 		<div className="space-y-6">
 			<div className="grid gap-6 md:grid-cols-2">
-				<Card className="bg-content1 p-6 border-none shadow-none">
+				<Card className="dashboard-card p-6">
 					<div className="space-y-5">
 						<h3 className="text-lg font-bold">Anime Matrix</h3>
 						<Switch
@@ -132,7 +135,6 @@ export function AdvancedPage() {
 						</Slider>
 						<div className="flex gap-2">
 							<Button
-								variant="primary"
 								isDisabled={!animeEnabledAvailable || !!busyAction}
 								onPress={() =>
 									void runDashboardAction("setAnimeDisplayEnabled", () =>
@@ -143,7 +145,6 @@ export function AdvancedPage() {
 								Apply Display
 							</Button>
 							<Button
-								variant="secondary"
 								isDisabled={!animeEnabledAvailable || !!busyAction}
 								onPress={() =>
 									void runDashboardAction("setAnimeBrightness", () =>
@@ -157,7 +158,7 @@ export function AdvancedPage() {
 					</div>
 				</Card>
 
-				<Card className="bg-content1 p-6 border-none shadow-none">
+				<Card className="dashboard-card p-6">
 					<div className="space-y-5">
 						<h3 className="text-lg font-bold">Backlight</h3>
 						<Label htmlFor="advanced-screenpad-brightness">
@@ -192,7 +193,6 @@ export function AdvancedPage() {
 							</Switch.Content>
 						</Switch>
 						<Button
-							variant="primary"
 							isDisabled={
 								!backlightAvailable ||
 								!!busyAction ||
@@ -219,7 +219,7 @@ export function AdvancedPage() {
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-2">
-				<Card className="bg-content1 p-6 border-none shadow-none">
+				<Card className="dashboard-card p-6">
 					<div className="space-y-5">
 						<h3 className="text-lg font-bold">SCSI</h3>
 						<Switch
@@ -246,7 +246,6 @@ export function AdvancedPage() {
 						/>
 						<div className="flex gap-2">
 							<Button
-								variant="primary"
 								isDisabled={!scsiAvailable || !!busyAction}
 								onPress={() =>
 									void runDashboardAction("setScsiEnabled", () =>
@@ -257,7 +256,6 @@ export function AdvancedPage() {
 								Apply Enabled
 							</Button>
 							<Button
-								variant="secondary"
 								isDisabled={!scsiAvailable || !!busyAction || !scsiModeValid}
 								onPress={() =>
 									void runDashboardAction("setScsiMode", () =>
@@ -271,7 +269,7 @@ export function AdvancedPage() {
 					</div>
 				</Card>
 
-				<Card className="bg-content1 p-6 border-none shadow-none">
+				<Card className="dashboard-card p-6">
 					<div className="space-y-5">
 						<h3 className="text-lg font-bold">Armoury Attributes</h3>
 						<Select
@@ -323,7 +321,6 @@ export function AdvancedPage() {
 							disabled={armouryInputDisabled}
 						/>
 						<Button
-							variant="primary"
 							isDisabled={armouryInputDisabled}
 							onPress={() =>
 								void runDashboardAction("setArmouryValue", () =>

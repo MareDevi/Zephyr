@@ -1,9 +1,9 @@
 import { Card, ProgressBar, Separator } from "@heroui/react";
 import { useMemo } from "react";
 import {
+	CartesianGrid,
 	Line,
 	LineChart,
-	CartesianGrid,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
@@ -28,6 +28,28 @@ function clampUsage(value: number | null | undefined): number {
 	return Math.min(100, Math.max(0, value));
 }
 
+type MetricCardProps = {
+	label: string;
+	value: string;
+	hint: string;
+};
+
+function MetricCard({ label, value, hint }: MetricCardProps) {
+	return (
+		<Card className="dashboard-card p-5">
+			<Card.Header className="flex-col items-start gap-1 p-0">
+				<p className="text-xs font-semibold uppercase tracking-wider text-default-500">
+					{label}
+				</p>
+				<p className="text-2xl font-bold tracking-tight">{value}</p>
+			</Card.Header>
+			<div className="p-0 pt-2">
+				<p className="text-xs text-default-400">{hint}</p>
+			</div>
+		</Card>
+	);
+}
+
 export function OverviewPage() {
 	const { snapshot, history } = useDashboardRuntime();
 	const gpuModeDisplay =
@@ -36,6 +58,7 @@ export function OverviewPage() {
 
 	const cpuUsage = clampUsage(snapshot?.performance.cpu.utilizationPercent);
 	const gpuUsage = clampUsage(snapshot?.performance.gpu.utilizationPercent);
+	const ramUsage = clampUsage(snapshot?.performance.ram.utilizationPercent);
 
 	const chartData = useMemo(
 		() =>
@@ -49,120 +72,53 @@ export function OverviewPage() {
 	);
 
 	return (
-		<div className="space-y-8">
-			<section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-				<Card className="bg-content1 p-5 shadow-none border-none">
-					<div className="flex flex-col gap-4">
-						<span className="text-sm font-medium text-default-500">
-							Platform Profile
-						</span>
-						<div className="flex flex-col">
-							<span className="text-2xl font-bold text-foreground">
-								{snapshot?.platform.platformProfile ?? "Standard"}
-							</span>
-							<span className="text-xs text-default-400 mt-1">
-								{snapshot?.power.activeProfile ?? "Balanced"}
-							</span>
-						</div>
-					</div>
-				</Card>
-
-				<Card className="bg-content1 p-5 shadow-none border-none">
-					<div className="flex flex-col gap-4">
-						<span className="text-sm font-medium text-default-500">
-							GPU Mode
-						</span>
-						<div className="flex flex-col">
-							<span className="text-2xl font-bold text-foreground">
-								{gpuModeDisplay}
-							</span>
-							<span className="text-xs text-default-400 mt-1">
-								{snapshot?.performance.gpu.source ?? "Discrete"}
-							</span>
-						</div>
-					</div>
-				</Card>
-
-				<Card className="bg-content1 p-5 shadow-none border-none">
-					<div className="flex flex-col gap-4">
-						<span className="text-sm font-medium text-default-500">
-							Power Profile
-						</span>
-						<div className="flex flex-col">
-							<span className="text-2xl font-bold text-foreground">
-								{snapshot?.power.activeProfile ?? "N/A"}
-							</span>
-							<span className="text-xs text-default-400 mt-1">
-								{snapshot?.power.performanceDegraded ?? "No degradation"}
-							</span>
-						</div>
-					</div>
-				</Card>
-
-				<Card className="bg-content1 p-5 shadow-none border-none">
-					<div className="flex flex-col gap-4">
-						<span className="text-sm font-medium text-default-500">
-							Daemon Status
-						</span>
-						<div className="flex flex-col">
-							<span className="text-2xl font-bold text-foreground">
-								{snapshot?.health.asusdAvailable ? "Active" : "Offline"} /{" "}
-								{snapshot?.health.supergfxdAvailable ? "GPU OK" : "GPU Off"}
-							</span>
-							<span className="text-xs text-default-400 mt-1">
-								{snapshot?.health.ppdAvailable ? "PPD Online" : "PPD Offline"}
-							</span>
-						</div>
-					</div>
-				</Card>
+		<div className="space-y-6">
+			<section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+				<MetricCard
+					label="Platform Profile"
+					value={snapshot?.platform.platformProfile ?? "Standard"}
+					hint={snapshot?.power.activeProfile ?? "Balanced"}
+				/>
+				<MetricCard
+					label="GPU Mode"
+					value={gpuModeDisplay}
+					hint={snapshot?.performance.gpu.source ?? "Discrete source"}
+				/>
+				<MetricCard
+					label="Power Profile"
+					value={snapshot?.power.activeProfile ?? "N/A"}
+					hint={snapshot?.power.performanceDegraded ?? "No degradation"}
+				/>
+				<MetricCard
+					label="Daemon Health"
+					value={snapshot?.health.asusdAvailable ? "Active" : "Offline"}
+					hint={snapshot?.health.ppdAvailable ? "PPD online" : "PPD offline"}
+				/>
 			</section>
 
-			<div className="grid gap-6 lg:grid-cols-12">
-				<Card className="lg:col-span-8 bg-content1 border-none shadow-none overflow-hidden">
-					<div className="p-6">
-						<div className="flex items-center justify-between mb-8">
-							<div className="flex flex-col">
-						<h3 className="text-lg font-bold">Real-time Performance</h3>
-								<div className="flex items-center gap-4 mt-1">
-									<div className="flex items-center gap-2">
-										<span className="text-2xl font-bold text-primary">
-											{cpuUsage}%
-										</span>
-										<span className="text-[10px] font-bold text-success uppercase">
-											Weekly avg.
-										</span>
-									</div>
-									<Separator orientation="vertical" className="h-4" />
-									<div className="flex items-center gap-2">
-										<span className="text-2xl font-bold text-foreground">
-											{formatNumber(
-												snapshot?.performance.cpu.frequencyMhz,
-												"M",
-											)}
-										</span>
-										<span className="text-[10px] font-bold text-success uppercase">
-											Freq avg.
-										</span>
-									</div>
-								</div>
-							</div>
+			<section className="grid gap-6 xl:grid-cols-12">
+				<Card className="dashboard-card xl:col-span-8">
+					<Card.Header className="flex-col items-start gap-2 p-6">
+						<p className="section-title">Realtime performance</p>
+						<div className="flex flex-wrap items-center gap-4 text-xs font-semibold">
+							<span className="text-accent">CPU {cpuUsage}%</span>
+							<Separator orientation="vertical" className="h-3" />
+							<span className="text-success">GPU {gpuUsage}%</span>
+							<Separator orientation="vertical" className="h-3" />
+							<span className="text-warning">RAM {ramUsage}%</span>
 						</div>
-
-						<div className="h-64 w-full">
-							<div className="mb-4 flex flex-wrap items-center gap-4 text-xs font-semibold">
-								<span className="text-primary">CPU</span>
-								<span className="text-success">GPU</span>
-								<span className="text-warning">RAM</span>
-							</div>
+					</Card.Header>
+					<div className="p-6 pt-0">
+						<div className="h-72 w-full">
 							<ResponsiveContainer width="100%" height="100%">
-							<LineChart
-								data={chartData}
-								margin={{ left: -20, right: 0, top: 10, bottom: 0 }}
-							>
-								<CartesianGrid
-									strokeDasharray="3 3"
-									vertical={false}
-										strokeOpacity={0.1}
+								<LineChart
+									data={chartData}
+									margin={{ left: -20, right: 0, top: 10, bottom: 0 }}
+								>
+									<CartesianGrid
+										strokeDasharray="3 3"
+										vertical={false}
+										strokeOpacity={0.16}
 									/>
 									<XAxis dataKey="tick" hide />
 									<YAxis domain={[0, 100]} hide />
@@ -172,97 +128,81 @@ export function OverviewPage() {
 											borderRadius: "12px",
 											border: "1px solid var(--default-200)",
 										}}
-									itemStyle={{ color: "var(--primary)" }}
-								/>
-								<Line
-									type="monotone"
-									dataKey="cpu"
-									stroke="var(--primary)"
-									strokeWidth={2}
-									dot={false}
-								/>
-								<Line
-									type="monotone"
-									dataKey="gpu"
-									stroke="var(--success)"
-									strokeWidth={2}
-									dot={false}
-								/>
-								<Line
-									type="monotone"
-									dataKey="ram"
-									stroke="var(--warning)"
-									strokeWidth={2}
-									dot={false}
-								/>
-							</LineChart>
-						</ResponsiveContainer>
+									/>
+									<Line
+										type="monotone"
+										dataKey="cpu"
+										stroke="var(--accent)"
+										strokeWidth={2.4}
+										dot={false}
+									/>
+									<Line
+										type="monotone"
+										dataKey="gpu"
+										stroke="var(--success)"
+										strokeWidth={2.4}
+										dot={false}
+									/>
+									<Line
+										type="monotone"
+										dataKey="ram"
+										stroke="var(--warning)"
+										strokeWidth={2.4}
+										dot={false}
+									/>
+								</LineChart>
+							</ResponsiveContainer>
+						</div>
 					</div>
-				</div>
-			</Card>
+				</Card>
 
-				<div className="lg:col-span-4 space-y-6">
-					<Card className="bg-content1 p-6 border-none shadow-none">
-						<div className="flex items-center justify-between mb-6">
-							<h3 className="text-lg font-bold">GPU Analytics</h3>
+				<Card className="dashboard-card xl:col-span-4">
+					<Card.Header className="flex-col items-start gap-1 p-6">
+						<p className="section-title">GPU analytics</p>
+						<p className="section-description">
+							Realtime utilization and effective clock stability.
+						</p>
+					</Card.Header>
+					<div className="space-y-5 p-6 pt-0">
+						<div className="space-y-2">
+							<div className="flex items-center justify-between text-sm">
+								<span className="text-default-500">Utilization</span>
+								<span className="font-semibold">{gpuUsage}%</span>
+							</div>
+							<ProgressBar value={gpuUsage} color="success" size="sm" />
 						</div>
-						<div className="space-y-6">
-							<div className="flex flex-col gap-2">
-								<span className="text-3xl font-bold text-foreground">
-									{gpuUsage}%
+
+						<div className="space-y-2">
+							<div className="flex items-center justify-between text-sm">
+								<span className="text-default-500">Clock</span>
+								<span className="font-semibold">
+									{formatNumber(snapshot?.performance.gpu.frequencyMhz, " MHz")}
 								</span>
-								<span className="text-xs text-default-500">Utilization</span>
 							</div>
+							<ProgressBar
+								value={Math.min(100, gpuUsage + 6)}
+								color="accent"
+								size="sm"
+							/>
+						</div>
 
-							<div className="h-32 w-full">
-								<ResponsiveContainer width="100%" height="100%">
-									<LineChart
-										data={chartData}
-										margin={{ left: 0, right: 0, top: 0, bottom: 0 }}
-									>
-										<Line
-											type="step"
-											dataKey="gpu"
-											stroke="var(--success)"
-											strokeWidth={2}
-											dot={false}
-										/>
-									</LineChart>
-								</ResponsiveContainer>
+						<div className="grid grid-cols-2 gap-3">
+							<div className="rounded-xl border border-default-200 bg-default-100 p-3">
+								<p className="text-[10px] uppercase tracking-wide text-default-500">
+									VRAM
+								</p>
+								<p className="text-sm font-semibold">4.2 GB</p>
 							</div>
-
-							<div className="space-y-4">
-								<div className="flex flex-col gap-2">
-									<div className="flex justify-between text-xs font-medium">
-										<span className="text-default-500">Clock Speed</span>
-										<span>
-											{formatNumber(
-												snapshot?.performance.gpu.frequencyMhz,
-												" MHz",
-											)}
-										</span>
-									</div>
-									<ProgressBar value={gpuUsage} color="success" size="sm" />
-								</div>
-								<div className="grid grid-cols-2 gap-3">
-									<div className="bg-default-100 p-3 rounded-xl flex flex-col gap-1">
-										<span className="text-[10px] font-bold text-default-400 uppercase">
-											VRAM
-										</span>
-										<span className="text-sm font-bold">4.2 GB</span>
-									</div>
-									<div className="bg-default-100 p-3 rounded-xl flex flex-col gap-1">
-										<span className="text-[10px] font-bold text-default-400 uppercase">
-											Temp
-										</span>
-										<span className="text-sm font-bold">62 °C</span>
-									</div>
-								</div>
+							<div className="rounded-xl border border-default-200 bg-default-100 p-3">
+								<p className="text-[10px] uppercase tracking-wide text-default-500">
+									Temp
+								</p>
+								<p className="text-sm font-semibold">62 °C</p>
 							</div>
 						</div>
-					</Card>
-				</div>
-			</div>
+					</div>
+				</Card>
+			</section>
 		</div>
 	);
 }

@@ -4,6 +4,7 @@ mod ipc;
 mod logging;
 mod runtime;
 mod services;
+mod settings;
 mod state;
 mod tray;
 
@@ -24,6 +25,10 @@ pub fn run() {
         ipc::commands::get_bootstrap_snapshot,
         ipc::commands::refresh_bootstrap_snapshot,
         ipc::commands::get_dashboard_snapshot,
+        ipc::commands::get_settings,
+        ipc::commands::set_autostart,
+        ipc::commands::set_launch_behavior,
+        ipc::commands::set_theme,
         ipc::commands::refresh_dashboard_snapshot,
         ipc::commands::set_gpu_mode,
         ipc::commands::set_power_profile,
@@ -94,7 +99,18 @@ pub fn run() {
         .invoke_handler(specta_builder.invoke_handler())
         .setup(move |app| {
             specta_builder.mount_events(app);
+            let settings = settings::load_settings(app.handle())?;
+            settings::apply_autostart(app.handle(), settings.autostart_enabled)?;
+            let launch_behavior = settings.launch_behavior;
+            app.manage(settings::SettingsState::new(settings));
             tray::init(app)?;
+            if launch_behavior == ipc::dto::LaunchBehavior::Silent {
+                if let Some(window) = app.get_webview_window("main") {
+                    window
+                        .hide()
+                        .map_err(|error| anyhow::anyhow!("settings: failed to hide startup window: {error}"))?;
+                }
+            }
             app.manage(runtime::BackendRuntime::new()?);
             let app_handle = app.handle().clone();
             app.state::<runtime::BackendRuntime>().spawn_task(

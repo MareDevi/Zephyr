@@ -1,4 +1,12 @@
-import { Button, Card, Input, Label, ListBox, Select, Separator } from "@heroui/react";
+import {
+	Button,
+	Card,
+	Input,
+	Label,
+	ListBox,
+	Select,
+	Separator,
+} from "@heroui/react";
 import { IconRefresh, IconTrash, IconWind } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -113,7 +121,7 @@ export function FanCurvesPage() {
 
 	return (
 		<div className="space-y-8">
-			<Card className="bg-content1 p-6 border-none shadow-none">
+			<Card className="dashboard-card p-6">
 				<div className="flex flex-col gap-6">
 					<div className="flex items-center justify-between">
 						<div>
@@ -125,8 +133,8 @@ export function FanCurvesPage() {
 						<div
 							className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase ${
 								fanControlEnabled
-									? "bg-success/10 text-success"
-									: "bg-danger/10 text-danger"
+									? "bg-default text-success"
+									: "bg-default text-danger"
 							}`}
 						>
 							{fanControlEnabled ? "Available" : "Unavailable"}
@@ -176,7 +184,6 @@ export function FanCurvesPage() {
 
 						<div className="flex flex-col gap-2">
 							<Button
-								variant="secondary"
 								className="font-bold gap-2"
 								isDisabled={!fanControlEnabled || !!busyAction}
 								onPress={() =>
@@ -189,7 +196,6 @@ export function FanCurvesPage() {
 								Read Curves
 							</Button>
 							<Button
-								variant="danger"
 								className="font-bold gap-2"
 								isDisabled={!fanControlEnabled || !!busyAction}
 								onPress={() =>
@@ -205,7 +211,6 @@ export function FanCurvesPage() {
 
 						<div className="flex items-end">
 							<Button
-								variant="primary"
 								className="w-full font-bold gap-2"
 								isDisabled={!fanControlEnabled || !!busyAction}
 								onPress={() =>
@@ -225,7 +230,7 @@ export function FanCurvesPage() {
 				</div>
 			</Card>
 
-			<Card className="bg-content1 border-none shadow-none overflow-hidden">
+			<Card className="dashboard-card overflow-hidden">
 				<div className="p-6">
 					<div className="flex items-center justify-between mb-6">
 						<div className="flex gap-2 p-1 bg-default-100 rounded-xl">
@@ -233,10 +238,9 @@ export function FanCurvesPage() {
 								<Button
 									key={entry.fan}
 									size="sm"
-									variant={selectedFan === entry.fan ? "secondary" : "tertiary"}
 									className={`rounded-lg font-bold text-xs ${
 										selectedFan === entry.fan
-											? "bg-background shadow-sm"
+											? "bg-content3 shadow-sm"
 											: "text-default-500"
 									}`}
 									onPress={() => setSelectedFan(entry.fan)}
@@ -295,10 +299,10 @@ export function FanCurvesPage() {
 							</ResponsiveContainer>
 						</div>
 					) : (
-						<div className="rounded-xl border border-default-100 bg-default-50 p-4 text-sm text-default-600">
+						<div className="rounded-xl border border-default-200 bg-default-50 p-4 text-sm text-default-600">
 							No fan curve data loaded for this profile. Use{" "}
-							<span className="font-semibold">Read Curves</span> to fetch current
-							points.
+							<span className="font-semibold">Read Curves</span> to fetch
+							current points.
 						</div>
 					)}
 
@@ -308,7 +312,6 @@ export function FanCurvesPage() {
 						<div className="flex items-center justify-between">
 							<Label className="text-sm font-semibold">Curve Editor</Label>
 							<Button
-								variant="secondary"
 								size="sm"
 								isDisabled={!hasEditablePoints || !hasLocalEdits}
 								onPress={() => setEditablePoints(points)}
@@ -319,7 +322,7 @@ export function FanCurvesPage() {
 						<div className="grid gap-3 md:grid-cols-2">
 							{editablePoints.map((point, index) => (
 								<div
-									key={`${index}-${point.temperature}-${point.pwm}`}
+									key={`${selectedFan ?? "fan"}-${point.temperature}-${point.pwm}`}
 									className="grid grid-cols-2 gap-2 rounded-lg border border-default-100 p-3"
 								>
 									<div className="space-y-1">
@@ -375,10 +378,7 @@ export function FanCurvesPage() {
 														entryIndex === index
 															? {
 																	...entry,
-																	pwm: Math.max(
-																		0,
-																		Math.min(100, nextValue),
-																	),
+																	pwm: Math.max(0, Math.min(100, nextValue)),
 																}
 															: entry,
 													),
@@ -390,7 +390,6 @@ export function FanCurvesPage() {
 							))}
 						</div>
 						<Button
-							variant="secondary"
 							isDisabled={!backendSaveAvailable}
 							className="font-semibold"
 							onPress={() => {
@@ -398,7 +397,10 @@ export function FanCurvesPage() {
 									return;
 								}
 								const payloadPoints = editablePoints.map((point) => ({
-									temperature: Math.max(0, Math.min(100, Math.round(point.temperature))),
+									temperature: Math.max(
+										0,
+										Math.min(100, Math.round(point.temperature)),
+									),
 									pwm: Math.max(0, Math.min(100, Math.round(point.pwm))),
 								}));
 								void runDashboardAction("setFanCurve", () =>
