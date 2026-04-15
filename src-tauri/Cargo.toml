@@ -1,6 +1,6 @@
 [package]
 name = "zephyr"
-version = "0.1.0"
+version = "0.1.1"
 description = "ASUS ROG Laptop Control Center for Linux"
 authors = ["MareDevi"]
 edition = "2024"
